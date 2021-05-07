@@ -9,16 +9,13 @@
 #include <FastLED.h>
 #include "LedEffect.h"
 #include "LedSettings.h"
+#include "Automat.h"
+#include "EffectManager.h"
 
-uint32_t previousMillis = 0;
-uint32_t interval = 66;
+Automat tickEffect(66);
+Automat updateMode(3000);
 
-// uint8_t speed = 255;
-// uint8_t scale = 255;
-
-RainbowVertical rotateRainbow;
-// RotateRainbow rotateRainbow;
-Effect &currentEffect = rotateRainbow;
+EffectManager effectManager;
 
 class Led
 {
@@ -26,19 +23,25 @@ public:
   static void update()
   {
     uint32_t ms = millis();
-    if (ms - previousMillis > interval)
+    if (tickEffect.tick(ms))
     {
-      previousMillis = ms;
-      currentEffect.update(ms);
+      effectManager.update(ms);
       FastLED.show();
+    }
+
+    if (updateMode.tick(ms))
+    {
+      effectManager.nextEffect();
+      // effectManager.currentEffect->m_speed += 1;
     }
   }
 
   static void setup()
   {
     FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, 100);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, 50);
     FastLED.setBrightness(BRIGHTNESS);
   }
 };
+
 #endif

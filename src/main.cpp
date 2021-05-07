@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "Led.h"
 
-
 void setup()
 {
   Led::setup();
