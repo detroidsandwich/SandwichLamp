@@ -6,32 +6,24 @@
 uint8_t matrixWidth = MATRIX_WIDTH; // change to led settings
 uint8_t matrixHeight = MATRIX_HEIGHT;
 
-#define CURRENT_MODE = 0
-
 // Abstract class for implement
 class Effect
 {
 public:
-	uint8_t m_speed = 30; //default speed
-	uint8_t m_scale = 40; //default scale
+	virtual ~Effect(){};
 
-	inline virtual void update(uint32_t tick){};
+	inline virtual void update(uint32_t tick) { Serial.println("not implement"); };
 
-	void clear()
-	{
-		for (size_t i = 0; i < sizeof(leds); i++)
-		{
-			leds[i] = CRGB::Black;
-		}
-	}
+	void setSpeed(uint8_t speed) { m_scale = speed; }
+	uint8_t getSpeed() { return m_speed; }
+
+	void setScale(uint8_t scale) { m_scale = scale; }
+	uint8_t getScale() { return m_scale; }
+
+	uint8_t m_speed = 30; //default speed 0..255
+	uint8_t m_scale = 40; //default scale 0..255
 
 protected:
-	Effect(uint8_t speed, uint8_t scale)
-	{
-		m_speed = speed;
-		m_scale = scale;
-	}
-
 	Effect() {}
 };
 
@@ -41,13 +33,12 @@ class RotateRainbow : public Effect
 public:
 	RotateRainbow() : Effect() {}
 
-	RotateRainbow(uint8_t speed, uint8_t scale) : Effect(speed, scale) {}
-
 	void update(uint32_t tick) override
 	{
-		int32_t yHueDelta32 = ((int32_t)cos16(tick * (27 / 1)) * (350 / matrixWidth));
-		int32_t xHueDelta32 = ((int32_t)cos16(tick * (39 / 1)) * (310 / matrixHeight));
-		drawOneFrame(tick / 65536, yHueDelta32 / 32768, xHueDelta32 / 32768);
+		float_t iteration = tick * m_speed / 255;
+		int32_t yHueDelta32 = ((int32_t)cos16(iteration * (27 / 1)) * (350 / matrixWidth));
+		int32_t xHueDelta32 = ((int32_t)cos16(iteration * (39 / 1)) * (310 / matrixHeight));
+		drawOneFrame(iteration / 65536, yHueDelta32 / 32768, xHueDelta32 / 32768);
 	}
 
 private:
@@ -71,8 +62,6 @@ class SparklesRoutine : public Effect
 {
 public:
 	SparklesRoutine() : Effect() {}
-
-	SparklesRoutine(uint8_t speed, uint8_t scale) : Effect(speed, scale) {}
 
 	void update(uint32_t tick) override
 	{
@@ -120,10 +109,12 @@ private:
 class RainbowVertical : public Effect
 {
 	byte hue;
-public:
-	RainbowVertical() : Effect() {}
 
-	RainbowVertical(uint8_t speed, uint8_t scale) : Effect(speed, scale) {}
+public:
+	RainbowVertical() : Effect()
+	{
+		m_scale = 20;
+	}
 
 	void update(uint32_t tick) override
 	{
