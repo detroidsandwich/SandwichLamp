@@ -4,4 +4,5 @@
 This project is a fork of Alex Gyver's project.
 See original here : https://github.com/AlexGyver/GyverLamp
 
-_Transfer and addition of logic from arduino ide to platform._
+_Transfer and addition of logic from Arduino IDE to PlatformIO._
+https://platformio.org/platformio-ide
