@@ -5,27 +5,27 @@
 
 class Automat
 {
-  uint32_t m_previousMillis = 0;
-  uint32_t m_interval = -1;
+    uint32_t m_previousMillis = 0;
+    uint32_t m_interval = -1;
 
 public:
-  Automat(uint32_t interval)
-  {
-    m_interval = interval;
-  }
+    Automat(uint32_t interval)
+    {
+        m_interval = interval;
+    }
 
-  bool tick(uint32_t timeMillis)
-  {
-    if (timeMillis - m_previousMillis > m_interval)
+    bool tick(uint32_t timeMillis)
     {
-      m_previousMillis = timeMillis;
-      return true;
+        if (timeMillis - m_previousMillis > m_interval)
+        {
+            m_previousMillis = timeMillis;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
-    else
-    {
-      return false;
-    }
-  }
 };
 
 #endif

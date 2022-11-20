@@ -20,6 +20,8 @@ EffectManager effectManager;
 class Led
 {
 public:
+  Led() {}
+
   static void update()
   {
     uint32_t ms = millis();
@@ -38,9 +40,10 @@ public:
 
   static void setup()
   {
-    FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, 50);
-    FastLED.setBrightness(BRIGHTNESS);
+    FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+    FastLED.setCorrection(TypicalSMD5050);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, 500);
+    FastLED.setBrightness(5);
   }
 };
 
