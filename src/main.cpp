@@ -1,13 +1,19 @@
-#include <Arduino.h>
+#include <Esp.h>
 #include "Led.h"
+#include "Web.h"
+
+Led led;
+Web web;
 
 void setup()
 {
-  Led::setup();
   Serial.begin(115200);
+  led.setup();
+  web.setup();
 }
 
 void loop()
 {
-  Led::update();
+  led.update();
+  web.loop();
 }

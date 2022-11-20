@@ -20,8 +20,8 @@ public:
 	void setScale(uint8_t scale) { m_scale = scale; }
 	uint8_t getScale() { return m_scale; }
 
-	uint8_t m_speed = 30; //default speed 0..255
-	uint8_t m_scale = 40; //default scale 0..255
+	uint8_t m_speed = 30; // default speed 0..255
+	uint8_t m_scale = 40; // default scale 0..255
 
 protected:
 	Effect() {}

@@ -5,7 +5,7 @@
 #include <FastLED.h>
 
 #ifndef LED_PIN
-#define LED_PIN 1 // PIN LED LINE
+#define LED_PIN 4 // PIN LED LINE (D2 on board)
 #endif
 #ifndef COLOR_ORDER
 #define COLOR_ORDER GRB
@@ -14,7 +14,7 @@
 #define CHIPSET WS2811
 #endif
 #ifndef BRIGHTNESS
-#define BRIGHTNESS 255 //64  0..255
+#define BRIGHTNESS 255 // 64  0..255
 #endif
 
 // Params for width and height
