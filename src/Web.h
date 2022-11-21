@@ -2,10 +2,7 @@
 #define WEB_H
 
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
 #include "WebServer.h"
-#include "Automat.h"
-#include <functional>
 #include <ESP8266mDNS.h>
 
 // REMOVE IT
@@ -16,12 +13,10 @@ const char *password = "password";
 // IPAddress apIP(172, 217, 28, 1);
 // IPAddress subnet(255, 255, 255, 0);
 
-// Automat updateServer(200);
-
-ESP8266WebServer server(80);
-
 class Web
 {
+  WebServer webServer;
+
 public:
   Web() {}
   ~Web() {}
@@ -55,15 +50,19 @@ public:
       Serial.println("Error setting up MDNS responder!");
     }
 
-    WebServer webServer{server};
+    webServer.begin();
 
     MDNS.addService("http", "tcp", 80);
   }
 
-  void loop()
+  void update()
   {
     MDNS.update();
-    server.handleClient();
+    webServer.handleClient();
+  }
+
+  WebServer& currentWebServer(){
+    return webServer;
   }
 };
 

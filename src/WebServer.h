@@ -2,80 +2,73 @@
 #define WEBSERVER_H
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <string>
 
-bool LED1status = false;
-bool LED2status = false;
+const String EFFECT_NEXT = "effectNext";
+const String EFFECT_PREV = "effectPrev";
 
 class WebServer
 {
+  ESP8266WebServer server{80};
+  LedEffect *currentEffect;
+  std::function<void(const int8_t effectDiv)> callBackAddEffect = nullptr;
 
 public:
-  WebServer(ESP8266WebServer &server)
+  WebServer()
   {
     server.on("/", [&]()
-              { send(server); });
-    server.on("/led1on", [&]()
-              { LED1status = true;
-                send(server); });
-    server.on("/led1off", [&]()
-              { LED1status = false;
-                send(server); });
-    server.on("/led2on", [&]()
-              { LED2status = true;
-                send(server); });
-    server.on("/led2off", [&]()
-              { LED2status = false;
-                send(server); });
+              { refresh(); });
     server.onNotFound([&]()
-                      { handleNotFound(server); });
-    server.begin();
+                      { handleNotFound(); });
 
+    server.on("/" + EFFECT_NEXT, [&]()
+              { callBackAddEffect(1); });
+    server.on("/" + EFFECT_PREV, [&]()
+              { callBackAddEffect(-1); });
+  };
+
+  void begin()
+  {
+    server.begin();
     Serial.println("server is begin");
   };
 
-private:
-  void send(ESP8266WebServer &server)
+  void refresh()
   {
-    server.send(200, "text/html", SendHTML(LED1status, LED2status));
+    server.send(200, "text/html", SendHTML(currentEffect));
   }
 
-  void handleNotFound(ESP8266WebServer &server)
+  void handleClient()
+  {
+    server.handleClient();
+  }
+
+  void setEffectCallback(std::function<void(const int8_t effectDiv)> fn)
+  {
+    callBackAddEffect = fn;
+  }
+
+  void setEffect(LedEffect *ledEffect)
+  {
+    currentEffect = ledEffect;
+  }
+
+private:
+  void handleNotFound()
   {
     server.send(404, "text/plain", "Not found");
   }
 
-  static String SendHTML(uint8_t led1stat, uint8_t led2stat)
+  static String SendHTML(LedEffect *ledEffect)
   {
-    String ptr = "<!DOCTYPE html> <html>\n";
-    ptr += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
-    ptr += "<title>LED Control</title>\n";
-    ptr += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
-    ptr += "body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n";
-    ptr += ".button {display: block;width: 80px;background-color: #1abc9c;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}\n";
-    ptr += ".button-on {background-color: #1abc9c;}\n";
-    ptr += ".button-on:active {background-color: #16a085;}\n";
-    ptr += ".button-off {background-color: #34495e;}\n";
-    ptr += ".button-off:active {background-color: #2c3e50;}\n";
-    ptr += "p {font-size: 14px;color: #888;margin-bottom: 10px;}\n";
-    ptr += "</style>\n";
-    ptr += "</head>\n";
-    ptr += "<body>\n";
-    ptr += "<h1>ESP8266 Web Server</h1>\n";
-    ptr += "<h3>Using Access Point(AP) Mode</h3>\n";
-
-    if (led1stat)
-      ptr += "<p>LED1 Status: ON</p><a class=\"button button-off\" href=\"/led1off\">OFF</a>\n";
-    else
-      ptr += "<p>LED1 Status: OFF</p><a class=\"button button-on\" href=\"/led1on\">ON</a>\n";
-
-    if (led2stat)
-      ptr += "<p>LED2 Status: ON</p><a class=\"button button-off\" href=\"/led2off\">OFF</a>\n";
-    else
-      ptr += "<p>LED2 Status: OFF</p><a class=\"button button-on\" href=\"/led2on\">ON</a>\n";
-
-    ptr += "</body>\n";
-    ptr += "</html>\n";
+    String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 50px;}.button {display: block;width: 80px;background-color: #1a99bc;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}.button-on {background-color: #1a99bc;}.button-on:active {background-color: #1989a8;}.button-off {background-color: #34495e;}.button-off:active {background-color: #2c3e50;}.center-item {display: block;text-align: center;}p {font-size: 14px;color: #888;margin-bottom: 10px;}</style></head><body><h1>ESP8266 Web Server</h1><h3>Using Access Point(AP) Mode</h3><table style=\"display: inline\"><tr><td><a class=\"button button-on\" href=\"\n";
+    ptr += EFFECT_PREV;
+    ptr += "\">-</a></td><td style=\"padding: 0 20px\"><h3>\n";
+    ptr += ledEffect->getName();
+    ptr += "</h3></td><td><a class=\"button button-on\" href=\"\n";
+    ptr += EFFECT_NEXT;
+    ptr += "\">+</a></td></tr></table></body></html>\n";
     return ptr;
   }
 };

@@ -7,10 +7,15 @@ uint8_t matrixWidth = MATRIX_WIDTH; // change to led settings
 uint8_t matrixHeight = MATRIX_HEIGHT;
 
 // Abstract class for implement
-class Effect
+class LedEffect
 {
 public:
-	virtual ~Effect(){};
+	LedEffect(String name)
+	{
+		this->name = name;
+	};
+
+	virtual ~LedEffect() {}
 
 	inline virtual void update(uint32_t tick) { Serial.println("not implement"); };
 
@@ -20,18 +25,21 @@ public:
 	void setScale(uint8_t scale) { m_scale = scale; }
 	uint8_t getScale() { return m_scale; }
 
+	String getName()
+	{
+		return name;
+	}
+
+	String name;
 	uint8_t m_speed = 30; // default speed 0..255
 	uint8_t m_scale = 40; // default scale 0..255
-
-protected:
-	Effect() {}
 };
 
 // Effect for FastLed matrix
-class RotateRainbow : public Effect
+class RotateRainbow : public LedEffect
 {
 public:
-	RotateRainbow() : Effect() {}
+	RotateRainbow() : LedEffect("RotateRainbow") {}
 
 	void update(uint32_t tick) override
 	{
@@ -58,10 +66,10 @@ private:
 	}
 };
 
-class SparklesRoutine : public Effect
+class SparklesRoutine : public LedEffect
 {
 public:
-	SparklesRoutine() : Effect() {}
+	SparklesRoutine() : LedEffect("SparklesRoutine") {}
 
 	void update(uint32_t tick) override
 	{
@@ -106,12 +114,12 @@ private:
 	}
 };
 
-class RainbowVertical : public Effect
+class RainbowVertical : public LedEffect
 {
 	byte hue;
 
 public:
-	RainbowVertical() : Effect()
+	RainbowVertical() : LedEffect("RainbowVertical")
 	{
 		m_scale = 20;
 	}

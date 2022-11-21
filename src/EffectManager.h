@@ -6,18 +6,15 @@
 class EffectManager
 {
 public:
-    const int COUNT_MODE = 3; // don't foget update this
-    int m_currentMode = 0;
-    Effect *currentEffect = new RotateRainbow();
+    static const int COUNT_MODE = 3; // don't foget update this
 
-    void nextEffect()
+    void shiftEffectNumber(uint8_t effectNumber)
     {
-        updateEffect(safeNumberMode(++m_currentMode));
+        updateEffect(safeNumberMode(m_currentMode + effectNumber));
     }
 
-    void previousEffect()
-    {
-        updateEffect(safeNumberMode(--m_currentMode));
+    LedEffect* getCurrentEffect(){
+        return currentEffect;
     }
 
     void update(uint32_t tick)
@@ -33,9 +30,22 @@ public:
         }
     }
 
+    static int8_t safeNumberMode(int8_t i)
+    {
+        if (i >= COUNT_MODE)
+            return 0;
+        if (i < 0)
+            return COUNT_MODE - 1;
+        return i;
+    }
+
 private:
+    int m_currentMode = 0;
+    LedEffect *currentEffect = new RotateRainbow();
+
     void updateEffect(uint8_t effectNumber)
     {
+        m_currentMode = effectNumber;
         delete currentEffect;
         switch (effectNumber)
         {
@@ -49,18 +59,8 @@ private:
             currentEffect = new RainbowVertical();
             break;
         }
-        Serial.print("updateEffect");
-        Serial.print(effectNumber);
-        Serial.println();
-    }
-
-    uint8_t safeNumberMode(int8_t i)
-    {
-        if (i >= COUNT_MODE)
-            m_currentMode = 0;
-        if (i < 0)
-            m_currentMode = COUNT_MODE - 1;
-        return m_currentMode;
+        Serial.print("updateEffect = ");
+        Serial.println(effectNumber);
     }
 };
 
