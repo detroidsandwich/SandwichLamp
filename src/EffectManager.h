@@ -8,19 +8,12 @@ class EffectManager
 public:
     static const int COUNT_MODE = 3; // don't foget update this
 
-    void shiftEffectNumber(uint8_t effectNumber)
-    {
-        updateEffect(safeNumberMode(m_currentMode + effectNumber));
-    }
+    void setEffectNumber(uint8_t effectNumber) { updateEffect(safeNumberMode(effectNumber)); }
 
-    LedEffect* getCurrentEffect(){
-        return currentEffect;
-    }
+    u_int8_t getCurrentEffectNumber() { return m_currentMode; }
+    LedEffect *getCurrentEffect() { return currentEffect; }
 
-    void update(uint32_t tick)
-    {
-        currentEffect->update(tick);
-    }
+    void update(uint32_t tick) { currentEffect->update(tick); }
 
     void clear()
     {
@@ -59,8 +52,8 @@ private:
             currentEffect = new RainbowVertical();
             break;
         }
-        Serial.print("updateEffect = ");
-        Serial.println(effectNumber);
+        // Serial.print("updateEffect = ");
+        // Serial.println(effectNumber);
     }
 };
 

@@ -28,31 +28,16 @@ public:
     FastLED.setBrightness(5);
   }
 
-  void update()
+  void update(uint32_t ms)
   {
-    uint32_t ms = millis();
     if (tickEffect.tick(ms))
     {
       effectManager.update(ms);
       FastLED.show();
     }
-
-    // if (updateMode.tick(ms))
-    // {
-    //   effectManager.nextEffect();
-    //   // effectManager.currentEffect->m_speed += 1;
-    // }
   }
 
-  void shiftEffectNumber(int8_t effectNumber)
-  {
-    effectManager.shiftEffectNumber(effectNumber);
-  }
-
-  LedEffect *currentEffect()
-  {
-    return effectManager.getCurrentEffect();
-  };
+  EffectManager &getEffectManager() { return effectManager; }
 };
 
 #endif

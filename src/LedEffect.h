@@ -10,26 +10,21 @@ uint8_t matrixHeight = MATRIX_HEIGHT;
 class LedEffect
 {
 public:
-	LedEffect(String name)
-	{
-		this->name = name;
-	};
+	LedEffect(const String &name) { this->name = name; }
 
 	virtual ~LedEffect() {}
 
 	inline virtual void update(uint32_t tick) { Serial.println("not implement"); };
 
-	void setSpeed(uint8_t speed) { m_scale = speed; }
+	void setSpeed(uint8_t speed) { m_speed = speed; }
 	uint8_t getSpeed() { return m_speed; }
 
 	void setScale(uint8_t scale) { m_scale = scale; }
 	uint8_t getScale() { return m_scale; }
 
-	String getName()
-	{
-		return name;
-	}
+	String getName() { return name; }
 
+protected:
 	String name;
 	uint8_t m_speed = 30; // default speed 0..255
 	uint8_t m_scale = 40; // default scale 0..255
