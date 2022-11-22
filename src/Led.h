@@ -7,7 +7,6 @@
 #include <WProgram.h>
 #endif
 #include <FastLED.h>
-#include "LedEffect.h"
 #include "LedSettings.h"
 #include "Automat.h"
 #include "EffectManager.h"

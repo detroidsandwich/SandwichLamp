@@ -3,8 +3,8 @@
 
 #include "LedSettings.h"
 
-uint8_t matrixWidth = MATRIX_WIDTH; // change to led settings
-uint8_t matrixHeight = MATRIX_HEIGHT;
+const uint8_t matrixWidth = MATRIX_WIDTH; // change to led settings
+const uint8_t matrixHeight = MATRIX_HEIGHT;
 
 // Abstract class for implement
 class LedEffect
@@ -14,7 +14,7 @@ public:
 
 	virtual ~LedEffect() {}
 
-	inline virtual void update(uint32_t tick) { Serial.println("not implement"); };
+	inline virtual void update(uint32_t tick) { Serial.println("not implement"); }
 
 	void setSpeed(uint8_t speed) { m_speed = speed; }
 	uint8_t getSpeed() { return m_speed; }
@@ -26,11 +26,14 @@ public:
 
 protected:
 	String name;
-	uint8_t m_speed = 30; // default speed 0..255
-	uint8_t m_scale = 40; // default scale 0..255
+	uint8_t m_speed = 64; // default speed 0..255
+	uint8_t m_scale = 64; // default scale 0..255
 };
 
 // Effect for FastLed matrix
+//
+// RotateRainbow ------------------------
+//
 class RotateRainbow : public LedEffect
 {
 public:
@@ -60,7 +63,9 @@ private:
 		}
 	}
 };
-
+//
+// SparklesRoutine ------------------------
+//
 class SparklesRoutine : public LedEffect
 {
 public:
@@ -75,7 +80,7 @@ public:
 			if (colorXY(x, y) == 0)
 				leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
 		}
-		fader(70);
+		fader(m_speed);
 	}
 
 private:
@@ -108,23 +113,23 @@ private:
 		}
 	}
 };
-
+//
+// RainbowVertical ------------------------
+//
 class RainbowVertical : public LedEffect
 {
 	byte hue;
 
 public:
-	RainbowVertical() : LedEffect("RainbowVertical")
-	{
-		m_scale = 20;
-	}
+	RainbowVertical() : LedEffect("RainbowVertical") {}
 
 	void update(uint32_t tick) override
 	{
-		hue += 2;
+		hue += (m_speed / 4);
+		byte factor = (m_scale / 4);
 		for (byte j = 0; j < matrixHeight; j++)
 		{
-			CHSV thisColor = CHSV((byte)(hue + j * m_scale), 255, 255);
+			CHSV thisColor = CHSV((hue + j * factor), 255, 255);
 			for (byte i = 0; i < matrixWidth; i++)
 				leds[XYsafe(i, j)] = thisColor;
 		}

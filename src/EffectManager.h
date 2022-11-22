@@ -1,12 +1,13 @@
 #ifndef EFFECTMANAGER_H
 #define EFFECTMANAGER_H
 
-#include "LedEffect.h"
+#include "ledeffect/LedEffect.h"
+#include "ledeffect/FireEffect.h"
 
 class EffectManager
 {
 public:
-    static const int COUNT_MODE = 3; // don't foget update this
+    static const int COUNT_MODE = 4; // don't foget update this
 
     void setEffectNumber(uint8_t effectNumber) { updateEffect(safeNumberMode(effectNumber)); }
 
@@ -51,7 +52,11 @@ private:
         case 2:
             currentEffect = new RainbowVertical();
             break;
+        case 3:
+            currentEffect = new Fire();
+            break;
         }
+        // don't foget update COUNT_MODE
         // Serial.print("updateEffect = ");
         // Serial.println(effectNumber);
     }
