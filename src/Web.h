@@ -6,8 +6,8 @@
 #include <ESP8266mDNS.h>
 
 // REMOVE IT
-const char *ssid = "My_little_MERCUSYS";
-const char *password = "chornagora2008";
+const char *ssid = "ssid";
+const char *password = "password";
 
 /* Настройки IP адреса */
 // IPAddress apIP(172, 217, 28, 1);

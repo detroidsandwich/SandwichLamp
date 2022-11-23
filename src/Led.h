@@ -13,7 +13,7 @@
 
 class Led
 {
-  Automat tickEffect{66};
+  Automat tickEffect{16};
   EffectManager effectManager;
 
 public:

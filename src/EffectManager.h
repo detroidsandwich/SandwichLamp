@@ -7,7 +7,7 @@
 class EffectManager
 {
 public:
-    static const int COUNT_MODE = 4; // don't foget update this
+    static const int COUNT_MODE = 5; // don't foget update this
 
     void setEffectNumber(uint8_t effectNumber) { updateEffect(safeNumberMode(effectNumber)); }
 
@@ -15,14 +15,6 @@ public:
     LedEffect *getCurrentEffect() { return currentEffect; }
 
     void update(uint32_t tick) { currentEffect->update(tick); }
-
-    void clear()
-    {
-        for (size_t i = 0; i < sizeof(leds); i++)
-        {
-            leds[i] = CRGB::Black;
-        }
-    }
 
     static int8_t safeNumberMode(int8_t i)
     {
@@ -54,6 +46,9 @@ private:
             break;
         case 3:
             currentEffect = new Fire();
+            break;
+        case 4:
+            currentEffect = new Matrix();
             break;
         }
         // don't foget update COUNT_MODE

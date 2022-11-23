@@ -9,7 +9,7 @@ class Fire : public LedEffect
 	const bool SPARKLES = true;
 	unsigned char line[matrixWidth];
 	int pcnt = 0;
-	boolean loadingFlag = true;
+	bool loadingFlag = true;
 	unsigned char matrixValue[8][16];
 
 	// these values are substracetd from the generated values to give a shape to the animation

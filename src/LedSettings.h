@@ -154,10 +154,10 @@ uint16_t XY(uint8_t x, uint8_t y)
 // USE ONLY WITH THE "SAFETY PIXEL" LEDS
 uint16_t XYsafe(uint8_t x, uint8_t y)
 {
-  if (x >= MATRIX_WIDTH)
-    return -1;
-  if (y >= MATRIX_HEIGHT)
-    return -1;
+  if (x >= MATRIX_WIDTH || x < 0)
+    return NUM_LEDS + 1;
+  if (y >= MATRIX_HEIGHT || y < 0)
+    return NUM_LEDS + 1;
   return XY(x, y);
 }
 
@@ -170,6 +170,14 @@ uint32_t colorXY(uint8_t x, uint8_t y)
 {
   uint16_t i = XYsafe(x, y);
   return colorIndex(i);
+}
+
+void clearLeds()
+{
+  for (int32_t i = 0; i < (MATRIX_WIDTH * MATRIX_HEIGHT); i++)
+  {
+    leds[i] = CRGB::Black;
+  }
 }
 
 #endif

@@ -68,19 +68,25 @@ private:
 //
 class SparklesRoutine : public LedEffect
 {
+	uint32_t prevUpdateMillis = 0;
+
 public:
 	SparklesRoutine() : LedEffect("SparklesRoutine") {}
 
 	void update(uint32_t tick) override
 	{
-		for (byte i = 0; i < m_scale; i++)
+		if (tick - prevUpdateMillis > (255 - m_scale))
 		{
-			byte x = random(0, matrixWidth);
-			byte y = random(0, matrixHeight);
-			if (colorXY(x, y) == 0)
-				leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
+			prevUpdateMillis = tick;
+			for (byte i = 0; i < (m_scale / 32) + 1; i++)
+			{
+				byte x = random(0, matrixWidth);
+				byte y = random(0, matrixHeight);
+				if (colorXY(x, y) == CRGB::Black)
+					leds[XY(x, y)] = CHSV(random(0, 255), 255, 255);
+			}
 		}
-		fader(m_speed);
+		fader((m_speed + 16) / 8);
 	}
 
 private:
@@ -125,13 +131,58 @@ public:
 
 	void update(uint32_t tick) override
 	{
-		hue += (m_speed / 4);
+		hue += (m_speed / 16);
 		byte factor = (m_scale / 4);
 		for (byte j = 0; j < matrixHeight; j++)
 		{
 			CHSV thisColor = CHSV((hue + j * factor), 255, 255);
 			for (byte i = 0; i < matrixWidth; i++)
 				leds[XYsafe(i, j)] = thisColor;
+		}
+	}
+};
+//
+// Matrix ------------------------
+//
+class Matrix : public LedEffect
+{
+	uint32_t prevUpdateMillis = 0;
+
+public:
+	Matrix() : LedEffect("Matrix") {}
+
+	void update(uint32_t tick) override
+	{
+		if (tick - prevUpdateMillis < (255 - m_speed))
+		{
+			return;
+		}
+		prevUpdateMillis = tick;
+		CHSV thisColor = CHSV(HUE_GREEN, 255, 255); // HUE_GREEN for green
+		for (byte y = 0; y < matrixHeight; y++)
+		{
+			for (byte x = 0; x < matrixWidth; x++)
+			{
+				uint32_t currentColor = colorXY(x, y);
+				if (currentColor == thisColor)
+				{
+					leds[XYsafe(x, y - 1)] = thisColor;
+					leds[XYsafe(x, y)].fadeToBlackBy(m_scale / 8);
+				}
+				else if (currentColor != CRGB::Black)
+				{
+					leds[XYsafe(x, y)].fadeToBlackBy(m_scale / 4);
+				}
+			}
+		}
+
+		for (byte i = 0; i < ((255 - m_scale) / matrixHeight); i++)
+		{
+			long x = random(0, matrixWidth);
+			if (colorXY(x, matrixHeight - 1) == CRGB::Black)
+			{
+				leds[XYsafe(x, matrixHeight - 1)] = thisColor;
+			}
 		}
 	}
 };
