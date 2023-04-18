@@ -13,9 +13,6 @@
 #ifndef CHIPSET
 #define CHIPSET WS2811
 #endif
-#ifndef BRIGHTNESS
-#define BRIGHTNESS 255 // 64  0..255
-#endif
 
 // Params for width and height
 #ifndef MATRIX_WIDTH

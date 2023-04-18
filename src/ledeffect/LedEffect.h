@@ -187,4 +187,23 @@ public:
 	}
 };
 
+
+class WhiteEffect : public LedEffect
+{
+	byte hue;
+
+public:
+	WhiteEffect() : LedEffect("WhiteEffect") {}
+
+	void update(uint32_t tick) override
+	{
+		// hue += (m_speed / 16);
+		// byte factor = (m_scale / 4);
+		for (byte j = 0; j < matrixHeight; j++)
+		{
+			for (byte i = 0; i < matrixWidth; i++)
+				leds[XYsafe(i, j)] = CRGB::White;
+		}
+	}
+};
 #endif

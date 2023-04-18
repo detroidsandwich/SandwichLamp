@@ -1,117 +1,137 @@
-#ifndef WEBSERVER_H
-#define WEBSERVER_H
+// #ifndef WEBSERVER_H
+// #define WEBSERVER_H
 
-#include <Arduino.h>
-#include <ESP8266WebServer.h>
-#include <string>
+// #include <Arduino.h>
+// #include <ESP8266WebServer.h>
+// #include <string>
 
-const String EFFECT = "effect";
-const String MODE = "mode";
-const String SPEED = "speed";
-const String SCALE = "scale";
+// const String EFFECT = "effect";
+// const String BRIGHTNESS = "brightness";
+// const String MODE = "mode";
+// const String SPEED = "speed";
+// const String SCALE = "scale";
 
-class WebServer
-{
-  static const byte ARG_FACTOR = 32;
-  ESP8266WebServer server{80};
-  u_int8_t effectNumber;
-  LedEffect *currentEffect;
-  std::function<void(const u_int8_t effectDiv)> callBackEffectNumber = nullptr;
+// class WebServer
+// {
+//   static const byte ARG_FACTOR = 16;
+//   ESP8266WebServer server{80};
+//   LedData data;
 
-public:
-  WebServer()
-  {
-    server.on("/", [&]()
-              { refresh(); });
-    server.onNotFound([&]()
-                      { handleNotFound(); });
+//   std::function<void(const LedData &data)> callBackLedData = nullptr;
 
-    server.on("/" + EFFECT, [&]()
-              { handleRequest(); });
-  };
+// public:
+//   WebServer()
+//   {
+//     server.on("/", [&]()
+//               { handleRequest(); });
+//     server.onNotFound([&]()
+//                       { refresh(); });
 
-  void begin()
-  {
-    server.begin();
-    Serial.println("server is begin");
-  };
+//     server.on("/" + EFFECT, [&]()
+//               { handleRequest(); });
+//   };
 
-  void refresh()
-  {
-    server.send(200, "text/html", SendHTML(currentEffect, effectNumber));
-  }
+//   void begin()
+//   {
+//     server.begin();
+//     Serial.println("server is begin");
+//   };
 
-  void handleClient() { server.handleClient(); }
+//   void refresh()
+//   {
+//     // String htmlPage = createWebPage();
+//     server.send(200, "text/html", SendHTML(data));
+//   }
 
-  void setEffectCallback(std::function<void(const u_int8_t effectDiv)> fn) { callBackEffectNumber = fn; }
-  void setEffectNumber(u_int8_t effectNumber) { this->effectNumber = effectNumber; }
-  void setEffectLink(LedEffect *ledEffect) { currentEffect = ledEffect; }
+//   void handleClient() { server.handleClient(); }
 
-  void handleRequest()
-  {
-    // for (int i = 0; i < server.args(); i++)
-    // {
-    //   String message = "Arg nº" + (String)i + " –> "; // добавить текущее значение счетчика
-    //   message += server.argName(i) + ": ";            // получить имя параметра
-    //   message += server.arg(i);                       // получить значение параметра
-    //                                                   // message += server.arg(i).substring(1, 3) + " ";
-    //                                                   // message += server.arg(i).c_str();
-    //   // message += server.arg(i).toInt();
-    //   Serial.println(message);
-    // }
+//   void setLedDataCallback(std::function<void(const LedData &data)> fn) { callBackLedData = fn; }
+//   void setLedData(LedData data) { this->data = data; }
 
-    uint8_t mode = server.arg(MODE).toInt();
-    uint8_t speed = server.arg(SPEED).toInt();
-    uint8_t scale = server.arg(SCALE).toInt();
+//   void handleRequest()
+//   {
+//     for (int i = 0; i < server.args(); i++)
+//     {
+//       String message = "Arg nº" + (String)i + " –> "; // добавить текущее значение счетчика
+//       message += server.argName(i) + ": ";            // получить имя параметра
+//       message += server.arg(i);                       // получить значение параметра
+//       Serial.println(message);
+//     }
 
-    if (mode != effectNumber)
-    {
-      callBackEffectNumber(mode);
-    }
-    currentEffect->setSpeed(speed);
-    currentEffect->setScale(scale);
-    refresh();
-  }
+//     uint8_t brightness = server.arg(BRIGHTNESS).toInt() * ARG_FACTOR;
+//     uint8_t mode = server.arg(MODE).toInt();
+//     uint8_t speed = server.arg(SPEED).toInt() * ARG_FACTOR;
+//     uint8_t scale = server.arg(SCALE).toInt() * ARG_FACTOR;
 
-private:
-  void handleNotFound()
-  {
-    server.send(404, "text/plain", "Not found");
-  }
+//     LedData data{brightness, mode, speed, scale};
+//     callBackLedData(data);
+//     refresh();
+//   }
 
-  static String SendHTML(LedEffect *ledEffect, u_int8_t effectNumber)
-  {
-    String name = ledEffect->getName();
-    u_int8_t speed = ledEffect->getSpeed();
-    u_int8_t scale = ledEffect->getScale();
+// private:
+//   void handleNotFound()
+//   {
+//     server.send(404, "text/plain", "Not found");
+//   }
 
-    String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 50px;}.button {display: block;width: 80px;background-color: #1a99bc;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}.button-on {background-color: #1a99bc;}.button-on:active {background-color: #1989a8;}.button-off {background-color: #34495e;}.button-off:active {background-color: #2c3e50;}.center-item {display: block;text-align: center;}p {font-size: 14px;color: #888;margin-bottom: 10px;}</style></head><body><h1>ESP8266 Web Server</h1><h3>Using Access Point(AP) Mode</h3><h3>MODE</h3><table style=\"display: inline\"><tr><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber - 1, speed, scale);
-    ptr += "\">-</a></td><td style=\"padding: 0 20px\"><h3>\n";
-    ptr += name;
-    ptr += "</h3></td><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber + 1, speed, scale);
-    ptr += "\">+</a></td></tr></table><h3>SPEED</h3><table style=\"display: inline\"><tr><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber, speed - ARG_FACTOR, scale);
-    ptr += "\">-</a></td><td style=\"padding: 0 20px\"><h3>\n";
-    ptr += speed / ARG_FACTOR;
-    ptr += "</h3></td><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber, speed + ARG_FACTOR, scale);
-    ptr += "\">+</a></td></tr></table><h3>SCALE</h3><table style=\"display: inline\"><tr><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber, speed, scale - ARG_FACTOR);
-    ptr += "\">-</a></td><td style=\"padding: 0 20px\"><h3>\n";
-    ptr += scale / ARG_FACTOR;
-    ptr += "</h3></td><td><a class=\"button button-on\" href=\"\n";
-    ptr += createLink(effectNumber, speed, scale + ARG_FACTOR);
-    ptr += "\">+</a></td></tr></table></body></html>\n";
-    // Serial.println("sendhtml is finish");
-    return ptr;
-  }
+//   static String SendHTML(LedData &data)
+//   {
+//     Serial.println("sendhtml start");
+//     u_int8_t brightness = data.brightness / ARG_FACTOR;
+//     // String name = data.name;
+//     u_int8_t speed = data.speed / ARG_FACTOR;
+//     u_int8_t scale = data.scale / ARG_FACTOR;
+//     u_int8_t mode = data.numberEffect;
+//     Serial.println("sendhtml start mode " + String(mode) + " speed " + data.speed + " scale " + data.scale);
 
-  static String createLink(u_int8_t mode, u_int8_t speed, u_int8_t scale)
-  {
-    return EFFECT + "?" + MODE + "=" + mode + "&" + SPEED + "=" + speed + "&" + SCALE + "=" + scale;
-  }
-};
+//     // String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 30px;}.button-on {color: white;width: 3em;height: 3em;border-radius: 3em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}.button-on:hover {background: #0061C3;}.button-on:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}p {font-size: 14px;color: #888;margin-bottom: 10px;}input[type=range].slider {height: 2.2em;width: 18em;-webkit-appearance: none;}input[type=range].slider:focus {outline: none;}input[type=range].slider::-webkit-slider-thumb {-webkit-appearance: none;width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: calc(max((1em - 1px - 1px) * 0.5, 0px) - 2em * 0.5);}input[type=range].slider::-webkit-slider-runnable-track {height: 1em;border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-webkit-slider-thumb:hover {background: #0061C3;}input[type=range].slider::-webkit-slider-thumb:active {background: #2F98F9;}/*mozilla*/input[type=range].slider::-moz-range-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}input[type=range].slider::-moz-range-track {height: max(calc(1em - 1px - 1px), 0px);border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-moz-range-thumb:hover {background: #0061C3;}input[type=range].slider::-moz-range-thumb:active {background: #2F98F9;}/*ms*/input[type=range].slider::-ms-fill-upper {background: transparent;border-color: transparent;}input[type=range].slider::-ms-fill-lower {background: transparent;border-color: transparent;}input[type=range].slider::-ms-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: 0;box-sizing: border-box;}input[type=range].slider::-ms-track {height: 1em;border-radius: 0.5em;background: #efefef;border: 1px solid #b2b2b2;box-shadow: none;box-sizing: border-box;}input[type=range].slider::-ms-thumb:hover {background: #0061C3;}input[type=range].slider::-ms-thumb:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}</style><script>function plusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = ++slider.value;output.textContent = slider.value;updateLink();}function minusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = --slider.value;output.textContent = slider.value;updateLink();}function changeSlider(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector(\".output\");output.textContent = slider.value;updateLink();}function updateLink() {let params = new URL(location);let searchParams = new URLSearchParams();document.querySelectorAll(\".param\").forEach(element => {let output = element.querySelector(\".output\");console.log(`${element}`);searchParams.append(element.id, output.textContent);});params.search = searchParams;location.replace(params);}</script></head><body><h1>SandwichLamp</h1><table style=\"display: inline\"><th><tr class=\"param\" id=\"brightness\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(brightness)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" value=\"0\" onchange=\"changeSlider(brightness)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(brightness)\"></td><td> <label>Brightness</label></td></tr><tr class=\"param\" id=\"mode\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(mode)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" value=\"0\" onchange=\"changeSlider(mode)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(mode)\"></td><td> <label>Mode</label></td></tr><tr class=\"param\" id=\"speed\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(speed)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" value=\"0\" onchange=\"changeSlider(speed)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(speed)\"></td><td> <label>Speed</label></td></tr><tr class=\"param\" id=\"scale\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(scale)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" value=\"0\" onchange=\"changeSlider(scale)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(scale)\"></td><td> <label>Scale</label></td></tr></th></table><script>let searchParams = new URLSearchParams(location.search);document.querySelectorAll(\".param\").forEach(element => {let param = parseInt(searchParams.get(element.id), 0);element.querySelector(\".slider\").value = param;element.querySelector(\".output\").textContent = param;});</script></body></html>";
 
-#endif
+//     // String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 30px;}.button-on {color: white;width: 3em;height: 3em;border-radius: 3em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}.button-on:hover {background: #0061C3;}.button-on:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}p {font-size: 14px;color: #888;margin-bottom: 10px;}input[type=range].slider {height: 2.2em;width: 18em;-webkit-appearance: none;}input[type=range].slider:focus {outline: none;}input[type=range].slider::-webkit-slider-thumb {-webkit-appearance: none;width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: calc(max((1em - 1px - 1px) * 0.5, 0px) - 2em * 0.5);}input[type=range].slider::-webkit-slider-runnable-track {height: 1em;border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-webkit-slider-thumb:hover {background: #0061C3;}input[type=range].slider::-webkit-slider-thumb:active {background: #2F98F9;}/*mozilla*/input[type=range].slider::-moz-range-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}input[type=range].slider::-moz-range-track {height: max(calc(1em - 1px - 1px), 0px);border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-moz-range-thumb:hover {background: #0061C3;}input[type=range].slider::-moz-range-thumb:active {background: #2F98F9;}/*ms*/input[type=range].slider::-ms-fill-upper {background: transparent;border-color: transparent;}input[type=range].slider::-ms-fill-lower {background: transparent;border-color: transparent;}input[type=range].slider::-ms-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: 0;box-sizing: border-box;}input[type=range].slider::-ms-track {height: 1em;border-radius: 0.5em;background: #efefef;border: 1px solid #b2b2b2;box-shadow: none;box-sizing: border-box;}input[type=range].slider::-ms-thumb:hover {background: #0061C3;}input[type=range].slider::-ms-thumb:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}</style><script>function plusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = ++slider.value;output.textContent = slider.value;updateLink();}function minusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = --slider.value;output.textContent = slider.value;updateLink();}function changeSlider(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector(\".output\");output.textContent = slider.value;updateLink();}function updateLink() {let params = new URL(location);let searchParams = new URLSearchParams();document.querySelectorAll(\".param\").forEach(element => {if (element.id != \"modename\") {let output = element.querySelector(\".output\");searchParams.append(element.id, output.textContent);}});params.search = searchParams;location.replace(params);}</script></head><body><h1>SandwichLamp</h1><table style=\"display: inline\"><th><tr class=\"param\" id=\"brightness\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(brightness)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(brightness)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(brightness)\"></td><td> <label>Brightness</label></td></tr><tr class=\"param\" id=\"modename\"><td colspan=\"4\"> <span class=\"output\">rotate</span></td></tr><tr class=\"param\" id=\"mode\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(mode)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(mode)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(mode)\"></td><td> <label>Mode</label></td></tr><tr class=\"param\" id=\"speed\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(speed)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(speed)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(speed)\"></td><td> <label>Speed</label></td></tr><tr class=\"param\" id=\"scale\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(scale)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(scale)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(scale)\"></td><td> <label>Scale</label></td></tr></th></table><script>if (location.search != null && location.search != \"\") {let searchParams = new URLSearchParams(location.search);document.querySelectorAll(\".param\").forEach(element => {let param = searchParams.get(element.id)console.log(`${param} ${element.id}`);if (param != null && param != \"\") {let paramInt = parseInt(searchParams.get(element.id), 0);element.querySelector(\".slider\").value = paramInt;element.querySelector(\".output\").textContent = paramInt;}});} else {";
+//     // ptr += "let brightness = " + brightness;
+//     // ptr += "; let mode =" + effectNumber;
+//     // ptr += "; let speed = " + speed;
+//     // ptr += "; let scale = " + scale;
+//     // ptr += "; /* let brightness = 5;let mode = 5;let speed = 5;let scale = 5;*/updateItemById(\"brightness\", brightness);updateItemById(\"mode\", mode);updateItemById(\"speed\", speed);updateItemById(\"scale\", scale);}/* let maxMode = 5;let effectName = \"Rotate\"; */";
+//     // ptr += "let maxMode = " + EffectManager::COUNT_MODE;
+//     // ptr += "; let effectName = " + name;
+//     // ptr += "; document.getElementById(\"mode\").querySelector(\".slider\").max = maxMode;document.getElementById(\"modename\").querySelector(\".output\").textContent = effectName;function updateItemById(name, value) {document.getElementById(name).querySelector(\".slider\").value = value;document.getElementById(name).querySelector(\".output\").textContent = value;}</script></body></html>";
+
+//     // String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 30px;}.button-on {color: white;width: 3em;height: 3em;border-radius: 3em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}.button-on:hover {background: #0061C3;}.button-on:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}p {font-size: 14px;color: #888;margin-bottom: 10px;}input[type=range].slider {height: 2.2em;width: 18em;-webkit-appearance: none;}input[type=range].slider:focus {outline: none;}input[type=range].slider::-webkit-slider-thumb {-webkit-appearance: none;width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: calc(max((1em - 1px - 1px) * 0.5, 0px) - 2em * 0.5);}input[type=range].slider::-webkit-slider-runnable-track {height: 1em;border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-webkit-slider-thumb:hover {background: #0061C3;}input[type=range].slider::-webkit-slider-thumb:active {background: #2F98F9;}/*mozilla*/input[type=range].slider::-moz-range-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}input[type=range].slider::-moz-range-track {height: max(calc(1em - 1px - 1px), 0px);border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-moz-range-thumb:hover {background: #0061C3;}input[type=range].slider::-moz-range-thumb:active {background: #2F98F9;}/*ms*/input[type=range].slider::-ms-fill-upper {background: transparent;border-color: transparent;}input[type=range].slider::-ms-fill-lower {background: transparent;border-color: transparent;}input[type=range].slider::-ms-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: 0;box-sizing: border-box;}input[type=range].slider::-ms-track {height: 1em;border-radius: 0.5em;background: #efefef;border: 1px solid #b2b2b2;box-shadow: none;box-sizing: border-box;}input[type=range].slider::-ms-thumb:hover {background: #0061C3;}input[type=range].slider::-ms-thumb:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}</style><script>function plusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = ++slider.value;output.textContent = slider.value;updateLink();}function minusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = --slider.value;output.textContent = slider.value;updateLink();}function changeSlider(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector(\".output\");output.textContent = slider.value;updateLink();}function updateLink() {let params = new URL(location);let searchParams = new URLSearchParams();document.querySelectorAll(\".param\").forEach(element => {if (element.id != \"modename\") {let output = element.querySelector(\".output\");searchParams.append(element.id, output.textContent);}});params.search = searchParams;location.replace(params);}</script></head><body><h1>SandwichLamp</h1><table style=\"display: inline\"><th><tr class=\"param\" id=\"brightness\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(brightness)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(brightness)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(brightness)\"></td><td> <label>Brightness</label></td></tr><tr class=\"param\" id=\"modename\"><td colspan=\"4\"> <span class=\"output\">rotate</span></td></tr><tr class=\"param\" id=\"mode\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(mode)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(mode)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(mode)\"></td><td> <label>Mode</label></td></tr><tr class=\"param\" id=\"speed\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(speed)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(speed)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(speed)\"></td><td> <label>Speed</label></td></tr><tr class=\"param\" id=\"scale\"><td> <span class=\"output\"></span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(scale)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(scale)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(scale)\"></td><td> <label>Scale</label></td></tr></th></table><script>if (location.search != null && location.search != \"\") {let searchParams = new URLSearchParams(location.search);document.querySelectorAll(\".param\").forEach(element => {let param = searchParams.get(element.id)console.log(`${param} ${element.id}`);if (param != null && param != \"\") {let paramInt = parseInt(searchParams.get(element.id), 0);element.querySelector(\".slider\").value = paramInt;element.querySelector(\".output\").textContent = paramInt;}});} else {let brightness = ";
+//     // ptr += brightness;
+//     // ptr += ";let mode = ";
+//     // ptr += mode;
+//     // ptr += ";let speed = ";
+//     // ptr += speed;
+//     // ptr += ";let scale = ";
+//     // ptr += scale;
+//     // ptr += ";updateItemById(\"brightness\", brightness);updateItemById(\"mode\", mode);updateItemById(\"speed\", speed);updateItemById(\"scale\", scale);}/* let maxMode = 5;let effectName = \"Rotate\"; */let maxMode = ";
+//     // ptr += EffectManager::COUNT_MODE;
+//     // ptr += ";let effectName = ";
+//     // ptr += name;
+//     // ptr += ";document.getElementById(\"mode\").querySelector(\".slider\").max = maxMode;document.getElementById(\"modename\").querySelector(\".output\").textContent = effectName;function updateItemById(name, value) {document.getElementById(name).querySelector(\".slider\").value = value;document.getElementById(name).querySelector(\".output\").textContent = value;}</script></body></html>";
+
+//     // String ptr = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\"><title>SandwichLamp</title><style>html {font-family: Helvetica;display: inline-block;margin: 0px auto;text-align: center;}body {margin-top: 50px;}h1 {color: #444444;margin: 50px auto 30px;}h3 {color: #444444;margin-bottom: 30px;}.button-on {color: white;width: 3em;height: 3em;border-radius: 3em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}.button-on:hover {background: #0061C3;}.button-on:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}p {font-size: 14px;color: #888;margin-bottom: 10px;}input[type=range].slider {height: 2.2em;width: 18em;-webkit-appearance: none;}input[type=range].slider:focus {outline: none;}input[type=range].slider::-webkit-slider-thumb {-webkit-appearance: none;width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: calc(max((1em - 1px - 1px) * 0.5, 0px) - 2em * 0.5);}input[type=range].slider::-webkit-slider-runnable-track {height: 1em;border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-webkit-slider-thumb:hover {background: #0061C3;}input[type=range].slider::-webkit-slider-thumb:active {background: #2F98F9;}/*mozilla*/input[type=range].slider::-moz-range-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;}input[type=range].slider::-moz-range-track {height: max(calc(1em - 1px - 1px), 0px);border: 1px solid #b2b2b2;border-radius: 0.5em;background: #efefef;box-shadow: none;}input[type=range].slider::-moz-range-thumb:hover {background: #0061C3;}input[type=range].slider::-moz-range-thumb:active {background: #2F98F9;}/*ms*/input[type=range].slider::-ms-fill-upper {background: transparent;border-color: transparent;}input[type=range].slider::-ms-fill-lower {background: transparent;border-color: transparent;}input[type=range].slider::-ms-thumb {width: 2em;height: 2em;border-radius: 2em;background: #007cf8;border: none;box-shadow: 0 0 2px #000000;margin-top: 0;box-sizing: border-box;}input[type=range].slider::-ms-track {height: 1em;border-radius: 0.5em;background: #efefef;border: 1px solid #b2b2b2;box-shadow: none;box-sizing: border-box;}input[type=range].slider::-ms-thumb:hover {background: #0061C3;}input[type=range].slider::-ms-thumb:active {background: #2F98F9;box-shadow: 0 0 2px 2px #00000072;}</style><script>function plusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = ++slider.value;output.textContent = slider.value;updateLink();}function minusParam(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector('.output');slider.value = --slider.value;output.textContent = slider.value;updateLink();}function changeSlider(id) {let slider = id.querySelector(\".slider\");let output = id.querySelector(\".output\");output.textContent = slider.value;updateLink();}function updateLink() {let params = new URL(location);let searchParams = new URLSearchParams();document.querySelectorAll(\".param\").forEach(element => {if (element.id != \"modename\") {let output = element.querySelector(\".output\");searchParams.append(element.id, output.textContent);}});params.search = searchParams;location.replace(params);}</script></head><body><h1>SandwichLamp</h1><table style=\"display: inline\"><th><tr class=\"param\" id=\"brightness\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(brightness)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(brightness)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(brightness)\"></td><td> <label>Brightness</label></td></tr><tr class=\"param\" id=\"modename\"><td colspan=\"4\"> <span class=\"output\">rotate</span></td></tr><tr class=\"param\" id=\"mode\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(mode)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(mode)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(mode)\"></td><td> <label>Mode</label></td></tr><tr class=\"param\" id=\"speed\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(speed)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(speed)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(speed)\"></td><td> <label>Speed</label></td></tr><tr class=\"param\" id=\"scale\"><td> <span class=\"output\">0</span></td><td> <input type=\"button\" class=\"button-on\" value=\"<\" onclick=\"minusParam(scale)\"></td><td> <input type=\"range\" class=\"slider\" min=\"0\" max=\"15\" onchange=\"changeSlider(scale)\"></td><td> <input type=\"button\" class=\"button-on\" value=\">\" onclick=\"plusParam(scale)\"></td><td> <label>Scale</label></td></tr></th></table><script>if (location.search != null && location.search != \"\") {let searchParams = new URLSearchParams(location.search);document.querySelectorAll(\".param\").forEach(element => {let param = searchParams.get(element.id);if (param != null && param != \"\") {let paramInt = parseInt(searchParams.get(element.id), 0);element.querySelector(\".slider\").value = paramInt;element.querySelector(\".output\").textContent = paramInt;}});} else {let brightness = ";
+//     // ptr += brightness;
+//     // ptr += ";let mode = ";
+//     // ptr += mode;
+//     // ptr += ";let speed = ";
+//     // ptr += speed;
+//     // ptr += ";let scale = ";
+//     // ptr += scale;
+//     // ptr += ";updateItemById(\"brightness\", brightness);updateItemById(\"mode\", mode);updateItemById(\"speed\", speed);updateItemById(\"scale\", scale);}/* let maxMode = 5;let effectName = \"Rotate\"; */let maxMode = ";
+//     // ptr += EffectManager::COUNT_MODE;
+//     // ptr += ";let effectName = \"";
+//     // ptr += name;
+//     // ptr += "\";document.getElementById(\"mode\").querySelector(\".slider\").max = maxMode;document.getElementById(\"modename\").querySelector(\".output\").textContent = effectName;function updateItemById(name, value) {document.getElementById(name).querySelector(\".slider\").value = value;document.getElementById(name).querySelector(\".output\").textContent = value;}</script></body></html>";
+
+//     Serial.println("sendhtml is finish");
+//     return createWebPage(EffectManager::MODE_NAMES,EffectManager::COUNT_MODE, mode, brightness, speed, scale);
+//   }
+
+//   static String createLink(u_int8_t brightness, u_int8_t mode, u_int8_t speed, u_int8_t scale)
+//   {
+//     return "?" + BRIGHTNESS + "=" + brightness + "&" + MODE + "=" + mode + "&" + SPEED + "=" + speed + "&" + SCALE + "=" + scale;
+//   }
+// };
+
+// #endif

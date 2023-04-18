@@ -5,21 +5,29 @@
 Led led;
 Web web;
 
+LedData ledData;
+
 void setup()
 {
   Serial.begin(115200);
   led.setup();
-  web.setup();
-  EffectManager &effectManager = led.getEffectManager();
-  WebServer &webServer = web.currentWebServer();
+  ledData = led.getData();
+  web.setup(&ledData, [](LedData *data)
+            {
+              led.updateData(*data);
+String request = "CALLBACK " + String(data->numberEffect) + " " + String(data->brightness) + " " + String(data->speed) + " " + String(data->scale) + " ";
+        Serial.println(request); });
 
-  webServer.setEffectLink(effectManager.getCurrentEffect());
-  webServer.setEffectNumber(effectManager.getCurrentEffectNumber());
+        
+String request = "INIT " + String(ledData.numberEffect) + " " + String(ledData.brightness) + " " + String(ledData.speed) + " " + String(ledData.scale) + " ";
+        Serial.println(request); 
 
-  webServer.setEffectCallback([&](u_int8_t effectNumber)
-                              { effectManager.setEffectNumber(effectNumber);
-                                webServer.setEffectLink(effectManager.getCurrentEffect());
-                                webServer.setEffectNumber(effectManager.getCurrentEffectNumber()); });
+  // WebServer &webServer = web.currentWebServer();
+  // webServer.setLedData(led.getData());
+  // webServer.setLedDataCallback([&](LedData data)
+  //                              {
+  //                               led.updateData(data);
+  //                                webServer.setLedData(led.getData()); });
 }
 
 void loop()

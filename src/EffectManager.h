@@ -3,18 +3,30 @@
 
 #include "ledeffect/LedEffect.h"
 #include "ledeffect/FireEffect.h"
+#include "LedData.h"
+
+
+const int COUNT_MODE = 5; // don't foget update this
+String MODE_NAMES[COUNT_MODE] = {"RotateRainbow", "SparklesRoutine", "RainbowVertical", "Fire", "Matrix"};
 
 class EffectManager
 {
 public:
-    static const int COUNT_MODE = 5; // don't foget update this
-
-    void setEffectNumber(uint8_t effectNumber) { updateEffect(safeNumberMode(effectNumber)); }
 
     u_int8_t getCurrentEffectNumber() { return m_currentMode; }
     LedEffect *getCurrentEffect() { return currentEffect; }
 
     void update(uint32_t tick) { currentEffect->update(tick); }
+
+    void updateData(LedData &data)
+    {
+        if (m_currentMode != data.numberEffect)
+        {
+            updateEffect(safeNumberMode(data.numberEffect));
+        };
+        currentEffect->setSpeed(data.speed);
+        currentEffect->setScale(data.scale);
+    }
 
     static int8_t safeNumberMode(int8_t i)
     {
@@ -27,7 +39,7 @@ public:
 
 private:
     int m_currentMode = 0;
-    LedEffect *currentEffect = new RotateRainbow();
+    LedEffect *currentEffect = new WhiteEffect();
 
     void updateEffect(uint8_t effectNumber)
     {
