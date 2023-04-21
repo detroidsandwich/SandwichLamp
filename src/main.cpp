@@ -1,34 +1,41 @@
 #include <Esp.h>
 #include "Led.h"
 #include "Web.h"
+#include "DhtManager.h"
 
 Led led;
 Web web;
+DhtManager dht;
+
+void updateWebTempAndHum(float temp, float hum)
+{
+  web.updateDht(temp, hum);
+}
 
 void setup()
 {
   LedData ledData;
   Serial.begin(115200);
-  led.setup(&ledData);
 
+  led.setup(&ledData);
   web.setup(ledData, [](LedData data)
             {
               led.updateData(&data);
-  String request = "CALLBACK " + String(data.currentEffect) + " " + String(data.brightness);
-        Serial.println(request); 
-        
-          Serial.println(request);
-  for (byte i = 0; i < data.COUNT_MODE; i++)
-  {
-    EffectData effect = data.effectData[i];
-    Serial.print(effect.id);
-    Serial.print(effect.name);
-    Serial.print(effect.type);
-    Serial.print(effect.speed);
-    Serial.println(effect.scale);
-  }
-        
-        });
+              String request = "CALLBACK " + String(data.currentEffect) + " " + String(data.brightness);
+              Serial.println(request);
+
+              Serial.println(request);
+              for (byte i = 0; i < data.COUNT_MODE; i++)
+              {
+                EffectData effect = data.effectData[i];
+                Serial.print(effect.id);
+                Serial.print(effect.name);
+                Serial.print(effect.type);
+                Serial.print(effect.speed);
+                Serial.println(effect.scale);
+              } });
+
+  dht.setup(updateWebTempAndHum);
 
   String request = "INIT " + String(ledData.currentEffect) + " " + String(ledData.brightness);
   Serial.println(request);
@@ -41,11 +48,12 @@ void setup()
     Serial.print(effect.speed);
     Serial.println(effect.scale);
   }
-}
+};
 
 void loop()
 {
   uint32_t ms = millis();
   led.update(ms);
   web.update();
-}
+  dht.update(ms, updateWebTempAndHum);
+};

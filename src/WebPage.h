@@ -1,12 +1,7 @@
-#ifndef WEBPAGE_H
-#define WEBPAGE_H
+#ifndef WEB_PAGE_H
+#define WEB_PAGE_H
 
-#include <Arduino.h>
-#include <ESP8266WebServer.h>
-#include <string>
-
-const byte MAX_SLIDER_VALUE = 255;
-const byte FACTOR_VALUE = 16;
+#include "DhtManager.h"
 
 // [\n";
 // "{ id: 0, name: \"Q\", type: \"normal\", speed: 64, scale: 64 },\n";
@@ -16,7 +11,7 @@ const byte FACTOR_VALUE = 16;
 // "{ id: 4, name: \"T\", type: \"normal\", speed: 64, scale: 64 },\n";
 // "{ id: 5, name: \"Y\", type: \"normal\", speed: 64, scale: 64 },\n";
 // "];\n";
-String addMode(EffectData *effects, byte size)
+static String addMode(EffectData *effects, byte size)
 {
     String modesArray = "[\n";
     for (byte i = 0; i < size; i++)
@@ -32,21 +27,22 @@ String addMode(EffectData *effects, byte size)
     modesArray += "];\n";
     Serial.println(modesArray);
     return modesArray;
-}
+};
 
-String createWebPage(LedData data)
+static String createWebPage(LedData data)
 {
-
     // htmlPage += "var modeIndex = " + String(data.currentEffect) + ";\n";
     // htmlPage += "var brightness = " + String(data.brightness) + ";\n";
     // htmlPage += "const maxSlider = " + String(MAX_SLIDER_VALUE) + ";\n";
-    // htmlPage += "const factor = " + String(FACTOR_SLIDER_VALUE) + ";\n";
+    // htmlPage += "const factor = " + String(FACTOR_VALUE) + ";\n";
     // htmlPage += "const modes = " + addMode(data.effectData, LedData::COUNT_MODE);
+
     String htmlPage = "";
     htmlPage += "<!DOCTYPE html>\n";
     htmlPage += "<html>\n";
     htmlPage += "<head>\n";
     htmlPage += "<title>SandwichLamp</title>\n";
+    htmlPage += "<meta name='viewport' content='width=device-width, initial-scale=1'>\n";
     htmlPage += "<style>\n";
     htmlPage += "body {\n";
     htmlPage += "text-align: center;\n";
@@ -57,8 +53,15 @@ String createWebPage(LedData data)
     htmlPage += "align-items: center;\n";
     htmlPage += "justify-content: center;\n";
     htmlPage += "}\n";
+    htmlPage += ".card-container {\n";
+    htmlPage += "display: flex;\n";
+    htmlPage += "flex-direction: column;\n";
+    htmlPage += "align-items: stretch;\n";
+    htmlPage += "}\n";
     htmlPage += ".card {\n";
-    htmlPage += "display: inline-block;\n";
+    htmlPage += "flex-basis: 0;\n";
+    htmlPage += "flex-grow: 1;\n";
+    htmlPage += "max-width: 100%;\n";
     htmlPage += "padding: 20px;\n";
     htmlPage += "border-radius: 10px;\n";
     htmlPage += "background-color: #f0f0f0;\n";
@@ -99,12 +102,16 @@ String createWebPage(LedData data)
     htmlPage += "}\n";
     htmlPage += "</style>\n";
     htmlPage += "<script>\n";
+
     htmlPage += "var modeIndex = " + String(data.currentEffect) + ";\n";
     htmlPage += "var brightness = " + String(data.brightness) + ";\n";
     htmlPage += "const maxSlider = " + String(MAX_SLIDER_VALUE) + ";\n";
     htmlPage += "const factor = " + String(FACTOR_VALUE) + ";\n";
     htmlPage += "const modes = " + addMode(data.effectData, LedData::COUNT_MODE);
+    htmlPage += "const UPDATE_DHT_DELAY = " + String(DhtManager::UPDATE_DELAY_MS) + ";\n";
+
     htmlPage += "window.onload = function () {\n";
+    htmlPage += "setupTempHum(document);\n";
     htmlPage += "setupSlider(document.getElementById(\"brightness\"), brightness, function (newValue) {\n";
     htmlPage += "brightness = newValue;\n";
     htmlPage += "});\n";
@@ -130,8 +137,8 @@ String createWebPage(LedData data)
     htmlPage += "});\n";
     htmlPage += "};\n";
     htmlPage += "function setupModeSlider(element, mode) {\n";
-    htmlPage += "var slider = element.querySelector(\"#slider\");\n";
-    htmlPage += "var output = element.querySelector(\"#output\");\n";
+    htmlPage += "let slider = element.querySelector(\"#slider\");\n";
+    htmlPage += "let output = element.querySelector(\"#output\");\n";
     htmlPage += "slider.max = modes.length - 1;\n";
     htmlPage += "output.innerHTML = mode.name;\n";
     htmlPage += "slider.value = modeIndex;\n";
@@ -142,8 +149,8 @@ String createWebPage(LedData data)
     htmlPage += "prevSliderValue = this.value;\n";
     htmlPage += "}\n";
     htmlPage += "}\n";
-    htmlPage += "var btnIncrement = element.querySelector(\"#btnIncrement\");\n";
-    htmlPage += "var btnDecrement = element.querySelector(\"#btnDecrement\");\n";
+    htmlPage += "let btnIncrement = element.querySelector(\"#btnIncrement\");\n";
+    htmlPage += "let btnDecrement = element.querySelector(\"#btnDecrement\");\n";
     htmlPage += "btnIncrement.onclick = function () {\n";
     htmlPage += "if (parseInt(slider.value) < parseInt(slider.max)) {\n";
     htmlPage += "updateModeData(element, parseInt(slider.value) + 1);\n";
@@ -156,9 +163,9 @@ String createWebPage(LedData data)
     htmlPage += "}\n";
     htmlPage += "};\n";
     htmlPage += "function updateModeData(element, value) {\n";
-    htmlPage += "var xhttp = new XMLHttpRequest();\n";
-    htmlPage += "var slider = element.querySelector(\"#slider\");\n";
-    htmlPage += "var output = element.querySelector(\"#output\");\n";
+    htmlPage += "let xhttp = new XMLHttpRequest();\n";
+    htmlPage += "let slider = element.querySelector(\"#slider\");\n";
+    htmlPage += "let output = element.querySelector(\"#output\");\n";
     htmlPage += "xhttp.onreadystatechange = function () {\n";
     htmlPage += "if (this.readyState == 4 && this.status == 200) {\n";
     htmlPage += "console.log(this.responseText);\n";
@@ -172,9 +179,9 @@ String createWebPage(LedData data)
     htmlPage += "updateMode(value);\n";
     htmlPage += "};\n";
     htmlPage += "function setupSlider(element, initialValue, callback) {\n";
-    htmlPage += "const slider = element.querySelector(\"#slider\");\n";
-    htmlPage += "const output = element.querySelector(\"#output\");\n";
-    htmlPage += "const value = Math.round(initialValue / factor);\n";
+    htmlPage += "let slider = element.querySelector(\"#slider\");\n";
+    htmlPage += "let output = element.querySelector(\"#output\");\n";
+    htmlPage += "let value = Math.round(initialValue / factor);\n";
     htmlPage += "var prevSliderValue = value;\n";
     htmlPage += "output.innerHTML = value;\n";
     htmlPage += "slider.value = value;\n";
@@ -185,8 +192,8 @@ String createWebPage(LedData data)
     htmlPage += "prevSliderValue = this.value;\n";
     htmlPage += "}\n";
     htmlPage += "}\n";
-    htmlPage += "const btnIncrement = element.querySelector(\"#btnIncrement\");\n";
-    htmlPage += "const btnDecrement = element.querySelector(\"#btnDecrement\");\n";
+    htmlPage += "let btnIncrement = element.querySelector(\"#btnIncrement\");\n";
+    htmlPage += "let btnDecrement = element.querySelector(\"#btnDecrement\");\n";
     htmlPage += "btnIncrement.onclick = function () {\n";
     htmlPage += "if (parseInt(slider.value) < parseInt(slider.max)) {\n";
     htmlPage += "updateSliderData(element, parseInt(slider.value) + 1, callback);\n";
@@ -199,10 +206,10 @@ String createWebPage(LedData data)
     htmlPage += "}\n";
     htmlPage += "};\n";
     htmlPage += "function updateSliderData(element, value, callback) {\n";
-    htmlPage += "const xhttp = new XMLHttpRequest();\n";
-    htmlPage += "const slider = element.querySelector(\"#slider\");\n";
-    htmlPage += "const output = element.querySelector(\"#output\");\n";
-    htmlPage += "const responseValue = (value * factor >= maxSlider) ? maxSlider : value * factor;\n";
+    htmlPage += "let xhttp = new XMLHttpRequest();\n";
+    htmlPage += "let slider = element.querySelector(\"#slider\");\n";
+    htmlPage += "let output = element.querySelector(\"#output\");\n";
+    htmlPage += "let responseValue = (value * factor >= maxSlider) ? maxSlider : value * factor;\n";
     htmlPage += "xhttp.onreadystatechange = function () {\n";
     htmlPage += "if (this.readyState == 4 && this.status == 200) {\n";
     htmlPage += "output.innerHTML = value\n";
@@ -212,38 +219,60 @@ String createWebPage(LedData data)
     htmlPage += "}\n";
     htmlPage += "xhttp.open(\"GET\", \"/\" + element.id + \"?value=\" + responseValue, true);\n";
     htmlPage += "xhttp.send();\n";
-    htmlPage += "// output.innerHTML = value\n";
-    htmlPage += "// slider.value = value\n";
-    htmlPage += "// callback(responseValue);\n";
     htmlPage += "};\n";
+    htmlPage += "function setupTempHum(element) {\n";
+    htmlPage += "let xhttp = new XMLHttpRequest();\n";
+    htmlPage += "let temp = element.querySelector(\"#temp\");\n";
+    htmlPage += "let hum = element.querySelector(\"#hum\");\n";
+    htmlPage += "xhttp.onreadystatechange = function () {\n";
+    htmlPage += "if (this.readyState == 4 && this.status == 200) {\n";
+    htmlPage += "console.log(this.responseText);\n";
+    htmlPage += "let jsonObject = JSON.parse(this.responseText);\n";
+    htmlPage += "temp.innerHTML = jsonObject.temperature;\n";
+    htmlPage += "hum.innerHTML = jsonObject.humidity;\n";
+    htmlPage += "}\n";
+    htmlPage += "}\n";
+    htmlPage += "setInterval(function () {\n";
+    htmlPage += "xhttp.open(\"GET\", \"/dht\", true);\n";
+    htmlPage += "xhttp.send();\n";
+    htmlPage += "}, UPDATE_DHT_DELAY);\n";
+    htmlPage += "xhttp.open(\"GET\", \"/dht\", true);\n";
+    htmlPage += "xhttp.send();\n";
+    htmlPage += "}\n";
     htmlPage += "</script>\n";
     htmlPage += "</head>\n";
     htmlPage += "<body>\n";
     htmlPage += "<h1>SandwichLamp</h1>\n";
-    htmlPage += "<!-- <p>Welcome to my website.</p> -->\n";
+    htmlPage += "<!-- <p>Temperature</p> -->\n";
+    htmlPage += "<div class=\"card-container\">\n";
+    htmlPage += "<div class=\"card\">\n";
+    htmlPage += "<div class=\"label\">Temperature: <span id=\"temp\">-</span>&deg;C</div>\n";
+    htmlPage += "<div class=\"label\">Humidity: <span id=\"hum\">-</span>%</div>\n";
+    htmlPage += "</div>\n";
     htmlPage += "<div class=\"card\" id=\"brightness\">\n";
-    htmlPage += "<div class=\"label\">Brightness:<span id=\"output\">50</span></div>\n";
+    htmlPage += "<div class=\"label\">Brightness: <span id=\"output\">0</span></div>\n";
     htmlPage += "<button id=\"btnDecrement\" class=\"btn\">-</button>\n";
     htmlPage += "<input type=\"range\" id=\"slider\" min=\"0\">\n";
     htmlPage += "<button id=\"btnIncrement\" class=\"btn\">+</button>\n";
     htmlPage += "</div>\n";
     htmlPage += "<div class=\"card\" id=\"mode\">\n";
-    htmlPage += "<div class=\"label\">Mode:<span class=\"label\" id=\"output\">0</span></div>\n";
+    htmlPage += "<div class=\"label\">Mode: <span class=\"label\" id=\"output\">0</span></div>\n";
     htmlPage += "<button id=\"btnDecrement\" class=\"btn\">-</button>\n";
     htmlPage += "<input type=\"range\" id=\"slider\" min=\"0\">\n";
     htmlPage += "<button id=\"btnIncrement\" class=\"btn\">+</button>\n";
     htmlPage += "</div>\n";
     htmlPage += "<div class=\"card\" id=\"speed\">\n";
-    htmlPage += "<div class=\"label\">Speed:<span id=\"output\">50</span></div>\n";
+    htmlPage += "<div class=\"label\">Speed: <span id=\"output\">0</span></div>\n";
     htmlPage += "<button id=\"btnDecrement\" class=\"btn\">-</button>\n";
     htmlPage += "<input type=\"range\" id=\"slider\" min=\"0\">\n";
     htmlPage += "<button id=\"btnIncrement\" class=\"btn\">+</button>\n";
     htmlPage += "</div>\n";
     htmlPage += "<div class=\"card\" id=\"scale\">\n";
-    htmlPage += "<div class=\"label\">Scale:<span id=\"output\">50</span></div>\n";
+    htmlPage += "<div class=\"label\">Scale: <span id=\"output\">0</span></div>\n";
     htmlPage += "<button id=\"btnDecrement\" class=\"btn\">-</button>\n";
     htmlPage += "<input type=\"range\" id=\"slider\" min=\"0\">\n";
     htmlPage += "<button id=\"btnIncrement\" class=\"btn\">+</button>\n";
+    htmlPage += "</div>\n";
     htmlPage += "</div>\n";
     htmlPage += "</body>\n";
     htmlPage += "</html>\n";

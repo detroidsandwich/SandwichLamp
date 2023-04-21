@@ -5,7 +5,7 @@
 #include <FastLED.h>
 
 #ifndef LED_PIN
-#define LED_PIN 4 // PIN LED LINE (D2 on board)
+#define LED_PIN D2 // PIN LED LINE (D2 on board)
 #endif
 #ifndef COLOR_ORDER
 #define COLOR_ORDER GRB

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SandwichLamp</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-container {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .card {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #999;
+            color: #fff;
+            border: none;
+            outline: none;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            background-color: #777;
+        }
+
+        #slider {
+            vertical-align: middle;
+            display: inline-block;
+        }
+
+        #output {
+            font-size: 24px;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .label {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    </style>
+    <script>
+        var modeIndex = 0;
+        var brightness = 64;
+        const maxSlider = 255;
+        const factor = 16;
+        var modes = [
+            { id: 0, name: "Q", type: "1", speed: 64, scale: 64 },
+            { id: 1, name: "W", type: "1", speed: 64, scale: 64 },
+            { id: 2, name: "E", type: "1", speed: 64, scale: 64 },
+            { id: 3, name: "R", type: "1", speed: 64, scale: 64 },
+            { id: 4, name: "T", type: "1", speed: 64, scale: 64 },
+            { id: 5, name: "Y", type: "1", speed: 64, scale: 64 },
+        ];
+        const UPDATE_DHT_DELAY = 2000;
+
+        window.onload = function () {
+            setupTempHum(document);
+            setupSlider(document.getElementById("brightness"), brightness, function (newValue) {
+                brightness = newValue;
+            });
+            updateMode(modeIndex);
+        };
+
+        function updateMode(index) {
+            const mode = modes[index];
+            switch (mode.type) {
+                case "1":
+                    setupNormal(mode);
+                    break;
+                default:
+                    setupNormal(mode);
+            }
+        };
+
+        function setupNormal(mode) {
+            setupModeSlider(document.getElementById("mode"), mode);
+            setupSlider(document.getElementById("speed"), mode.speed, function (newValue) {
+                mode.speed = newValue;
+            });
+            setupSlider(document.getElementById("scale"), mode.scale, function (newValue) {
+                mode.scale = newValue;
+            });
+        };
+
+        function setupModeSlider(element, mode) {
+            let slider = element.querySelector("#slider");
+            let output = element.querySelector("#output");
+            slider.max = modes.length - 1;
+            output.innerHTML = mode.name;
+            slider.value = modeIndex;
+            var prevSliderValue = slider.value;
+            slider.oninput = function () {
+                if (prevSliderValue != this.value) {
+                    updateModeData(element, this.value);
+                    prevSliderValue = this.value;
+                }
+            }
+
+            let btnIncrement = element.querySelector("#btnIncrement");
+            let btnDecrement = element.querySelector("#btnDecrement");
+            btnIncrement.onclick = function () {
+                if (parseInt(slider.value) < parseInt(slider.max)) {
+                    updateModeData(element, parseInt(slider.value) + 1);
+                }
+            }
+            btnDecrement.onclick = function () {
+                if (parseInt(slider.value) > parseInt(slider.min)) {
+                    updateModeData(element, parseInt(slider.value) - 1);
+                }
+            }
+        };
+
+        function updateModeData(element, value) {
+            let xhttp = new XMLHttpRequest();
+            let slider = element.querySelector("#slider");
+            let output = element.querySelector("#output");
+
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log(this.responseText);
+
+                    modeIndex = value;
+                    updateMode(value);
+                }
+            }
+            xhttp.open("GET", "/" + element.id + "?value=" + value, true);
+            xhttp.send();
+
+            modeIndex = value;
+            updateMode(value);
+        };
+
+        function setupSlider(element, initialValue, callback) {
+            let slider = element.querySelector("#slider");
+            let output = element.querySelector("#output");
+            let value = Math.round(initialValue / factor);
+            var prevSliderValue = value;
+            output.innerHTML = value;
+            slider.value = value;
+            slider.max = Math.round(maxSlider / factor);
+            slider.oninput = function () {
+                if (prevSliderValue != this.value) {
+                    updateSliderData(element, this.value, callback);
+                    prevSliderValue = this.value;
+                }
+            }
+
+            let btnIncrement = element.querySelector("#btnIncrement");
+            let btnDecrement = element.querySelector("#btnDecrement");
+            btnIncrement.onclick = function () {
+                if (parseInt(slider.value) < parseInt(slider.max)) {
+                    updateSliderData(element, parseInt(slider.value) + 1, callback);
+                }
+            }
+            btnDecrement.onclick = function () {
+                if (parseInt(slider.value) > parseInt(slider.min)) {
+                    updateSliderData(element, parseInt(slider.value) - 1, callback);
+                }
+            }
+        };
+
+        function updateSliderData(element, value, callback) {
+            let xhttp = new XMLHttpRequest();
+            let slider = element.querySelector("#slider");
+            let output = element.querySelector("#output");
+            let responseValue = (value * factor >= maxSlider) ? maxSlider : value * factor;
+
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    output.innerHTML = value
+                    slider.value = value
+                    callback(responseValue);
+                }
+            }
+
+            xhttp.open("GET", "/" + element.id + "?value=" + responseValue, true);
+            xhttp.send();
+        };
+
+        function setupTempHum(element) {
+            let xhttp = new XMLHttpRequest();
+            let temp = element.querySelector("#temp");
+            let hum = element.querySelector("#hum");
+
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log(this.responseText);
+                    let jsonObject = JSON.parse(this.responseText);
+                    temp.innerHTML = jsonObject.temperature;
+                    hum.innerHTML = jsonObject.humidity;
+                }
+            }
+            setInterval(function () {
+                xhttp.open("GET", "/dht", true);
+                xhttp.send();
+            }, UPDATE_DHT_DELAY);
+
+            xhttp.open("GET", "/dht", true);
+            xhttp.send();
+        }
+
+    </script>
+</head>
+
+<body>
+    <h1>SandwichLamp</h1>
+    <!-- <p>Temperature</p> -->
+    <div class="card-container">
+        <div class="card">
+            <div class="label">Temperature: <span id="temp">-</span>&deg;C</div>
+            <div class="label">Humidity: <span id="hum">-</span>%</div>
+        </div>
+        <div class="card" id="brightness">
+            <div class="label">Brightness: <span id="output">0</span></div>
+            <button id="btnDecrement" class="btn">-</button>
+            <input type="range" id="slider" min="0">
+            <button id="btnIncrement" class="btn">+</button>
+        </div>
+        <div class="card" id="mode">
+            <div class="label">Mode: <span class="label" id="output">0</span></div>
+            <button id="btnDecrement" class="btn">-</button>
+            <input type="range" id="slider" min="0">
+            <button id="btnIncrement" class="btn">+</button>
+        </div>
+        <div class="card" id="speed">
+            <div class="label">Speed: <span id="output">0</span></div>
+            <button id="btnDecrement" class="btn">-</button>
+            <input type="range" id="slider" min="0">
+            <button id="btnIncrement" class="btn">+</button>
+        </div>
+        <div class="card" id="scale">
+            <div class="label">Scale: <span id="output">0</span></div>
+            <button id="btnDecrement" class="btn">-</button>
+            <input type="range" id="slider" min="0">
+            <button id="btnIncrement" class="btn">+</button>
+        </div>
+    </div>
+</body>
+
+</html>

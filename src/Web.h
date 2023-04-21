@@ -1,9 +1,15 @@
 #ifndef WEB_H
 #define WEB_H
 
+// #pragma once
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <WebPage.h>
+#include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
+#include "WebPage.h"
+
+// class DhtManager;
 
 // REMOVE IT
 const char *ssid = "ssid";
@@ -24,6 +30,8 @@ public:
   ~Web() {}
 
   LedData data;
+  float temp;
+  float humidity;
 
   void setup(LedData initLedData, std::function<void(LedData)> callback)
   {
@@ -87,6 +95,15 @@ public:
                 callback(data);
                 server.send(200, "text/plain", "Scale set to " + String(value)); });
 
+    server.on("/dht", HTTP_GET, [this]()
+              {
+                StaticJsonDocument<200> doc;
+                doc["temperature"] = String(temp);
+                doc["humidity"] = humidity;
+                String output;
+                serializeJson(doc, output);
+                server.send(200, "application/json", output); });
+
     // Запуск сервера
     server.begin();
     Serial.println("Server started");
@@ -98,6 +115,12 @@ public:
   {
     // MDNS.update();
     server.handleClient();
+  }
+
+  void updateDht(float temperature, float humidity)
+  {
+    this->temp = temperature;
+    this->humidity = humidity;
   }
 };
 

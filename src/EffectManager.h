@@ -1,5 +1,5 @@
-#ifndef EFFECTMANAGER_H
-#define EFFECTMANAGER_H
+#ifndef EFFECT_MANAGER_H
+#define EFFECT_MANAGER_H
 
 #include "ledeffect/LedEffect.h"
 #include "ledeffect/FireEffect.h"

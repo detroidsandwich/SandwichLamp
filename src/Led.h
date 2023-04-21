@@ -15,7 +15,7 @@ class Led
   byte brightness = 255; // todo
 
 public:
-  Led() {}
+  Led(){};
 
   void setup(LedData *data)
   {
@@ -23,9 +23,7 @@ public:
     FastLED.setCorrection(TypicalSMD5050);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 500);
 
-    brightness = data->brightness;
-    // FastLED.setBrightness((brightness / 16) + 5);
-    FastLED.setBrightness(brightness);
+    updateBrightness(data->brightness);
 
     effectManager.setup(data);
   }
@@ -34,9 +32,7 @@ public:
   {
     if (brightness != data->brightness)
     {
-      brightness = data->brightness;
-      // FastLED.setBrightness((brightness / 16) + 5);
-      FastLED.setBrightness(brightness);
+      updateBrightness(data->brightness);
     }
 
     effectManager.updateData(data);
@@ -49,6 +45,12 @@ public:
       effectManager.update(ms);
       FastLED.show();
     }
+  }
+
+  void updateBrightness(byte newBrigthness)
+  {
+    brightness = newBrigthness;
+    FastLED.setBrightness((brightness / 9) + 2);
   }
 };
 
