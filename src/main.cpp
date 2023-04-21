@@ -5,29 +5,42 @@
 Led led;
 Web web;
 
-LedData ledData;
-
 void setup()
 {
+  LedData ledData;
   Serial.begin(115200);
-  led.setup();
-  ledData = led.getData();
-  web.setup(&ledData, [](LedData *data)
+  led.setup(&ledData);
+
+  web.setup(ledData, [](LedData data)
             {
-              led.updateData(*data);
-String request = "CALLBACK " + String(data->numberEffect) + " " + String(data->brightness) + " " + String(data->speed) + " " + String(data->scale) + " ";
-        Serial.println(request); });
-
-        
-String request = "INIT " + String(ledData.numberEffect) + " " + String(ledData.brightness) + " " + String(ledData.speed) + " " + String(ledData.scale) + " ";
+              led.updateData(&data);
+  String request = "CALLBACK " + String(data.currentEffect) + " " + String(data.brightness);
         Serial.println(request); 
+        
+          Serial.println(request);
+  for (byte i = 0; i < data.COUNT_MODE; i++)
+  {
+    EffectData effect = data.effectData[i];
+    Serial.print(effect.id);
+    Serial.print(effect.name);
+    Serial.print(effect.type);
+    Serial.print(effect.speed);
+    Serial.println(effect.scale);
+  }
+        
+        });
 
-  // WebServer &webServer = web.currentWebServer();
-  // webServer.setLedData(led.getData());
-  // webServer.setLedDataCallback([&](LedData data)
-  //                              {
-  //                               led.updateData(data);
-  //                                webServer.setLedData(led.getData()); });
+  String request = "INIT " + String(ledData.currentEffect) + " " + String(ledData.brightness);
+  Serial.println(request);
+  for (byte i = 0; i < ledData.COUNT_MODE; i++)
+  {
+    EffectData effect = ledData.effectData[i];
+    Serial.print(effect.id);
+    Serial.print(effect.name);
+    Serial.print(effect.type);
+    Serial.print(effect.speed);
+    Serial.println(effect.scale);
+  }
 }
 
 void loop()

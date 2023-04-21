@@ -187,11 +187,35 @@ public:
 	}
 };
 
+class ColorBlink : public LedEffect
+{
+	uint32_t prevUpdateMillis = 0;
+
+public:
+	ColorBlink() : LedEffect("ColorBlink") {}
+
+	void update(uint32_t tick) override
+	{
+		if (tick - prevUpdateMillis < (255 - m_speed))
+		{
+			return;
+		}
+		prevUpdateMillis = tick;
+
+		// Генерация нового цвета
+		CRGB newColor = CHSV(random8(), 255, 255); // Новый цвет в HSV формате
+
+		// Плавное изменение цвета на LED-матрице
+		for (int i = 0; i < matrixWidth * matrixHeight; i++)
+		{
+			nblend(leds[i], newColor, 32); // Плавное смешивание цветов с коэффициентом 32
+		}
+	}
+};
 
 class WhiteEffect : public LedEffect
 {
-	byte hue;
-
+	
 public:
 	WhiteEffect() : LedEffect("WhiteEffect") {}
 

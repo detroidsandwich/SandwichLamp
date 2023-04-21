@@ -2,7 +2,6 @@
 #define WEB_H
 
 #include <ESP8266WiFi.h>
-#include "WebServer.h"
 #include <ESP8266mDNS.h>
 #include <WebPage.h>
 
@@ -15,30 +14,24 @@ const char *password = "password";
 // IPAddress subnet(255, 255, 255, 0);
 
 ESP8266WebServer server{80};
-String htmlPage = "";
 
 class Web
 {
   const String DOMAIN_NAME = "sandwichlamp"; // sandwichlamp.local
-  // WebServer webServer;
-
-  // ESP8266WebServer server{80};
-
-  // String htmlPage = "";
 
 public:
   Web() {}
   ~Web() {}
 
-  struct LedData ledData;
+  LedData data;
 
-  void setup(LedData *initLedData, std::function<void(LedData *)> callback)
+  void setup(LedData initLedData, std::function<void(LedData)> callback)
   {
     // WiFi.mode(WIFI_AP);
     // WiFi.softAP("SandwichLamp");
     // WiFi.softAPConfig(apIP, apIP, subnet);
 
-    ledData = *initLedData;
+    data = initLedData;
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
@@ -63,43 +56,40 @@ public:
       Serial.println("Error setting up MDNS responder!");
     }
 
-    htmlPage = createWebPage(MODE_NAMES, COUNT_MODE, &ledData);
+    server.on("/", [this]()
+              { server.send(200, "text/html", createWebPage(data)); });
 
-    server.on("/", []()
-              { server.send(200, "text/html", htmlPage); });
     server.on("/mode", HTTP_GET, [callback, this]()
               {
                 byte value = server.arg("value").toInt();
-                this->ledData.numberEffect = value;
-                callback(&this->ledData);
+                data.currentEffect = value;
+                callback(data);
                 server.send(200, "text/plain", "Mode set to " + String(value)); });
 
     server.on("/brightness", HTTP_GET, [callback, this]()
               {
-                byte value = converWebToLedValue(server.arg("value"));
-                this->ledData.brightness = value;
-                callback(&this->ledData);
+                byte value = server.arg("value").toInt();
+                data.brightness = value;
+                callback(data);
                 server.send(200, "text/plain", "Brightness set to " + String(value)); });
 
     server.on("/speed", HTTP_GET, [callback, this]()
               {
-                byte value = converWebToLedValue(server.arg("value"));
-                this->ledData.speed = value;
-                callback(&this->ledData);
+                byte value = server.arg("value").toInt();
+                data.effectData[data.currentEffect].speed = value;
+                callback(data);
                 server.send(200, "text/plain", "Speed set to " + String(value)); });
 
     server.on("/scale", HTTP_GET, [callback, this]()
               {
-                byte value = converWebToLedValue(server.arg("value"));
-                this->ledData.scale = value;
-                callback(&this->ledData);
+                byte value = server.arg("value").toInt();
+                data.effectData[data.currentEffect].scale = value;
+                callback(data);
                 server.send(200, "text/plain", "Scale set to " + String(value)); });
 
     // Запуск сервера
     server.begin();
     Serial.println("Server started");
-
-    // webServer.begin();
 
     MDNS.addService("http", "tcp", 80);
   }
@@ -107,29 +97,8 @@ public:
   void update()
   {
     // MDNS.update();
-    // webServer.handleClient();
     server.handleClient();
   }
-
-  void updateCallbackData(LedData ledData, std::function<void(LedData *)> callback)
-  {
-  }
-
-  byte converWebToLedValue(String webValue)
-  {
-    int value = webValue.toInt() * FACTOR;
-    if (value >= MAX_SLIDER_VALUE)
-    {
-      return MAX_SLIDER_VALUE;
-    }
-
-    return value;
-  }
-
-  // WebServer &currentWebServer()
-  // {
-  //   return webServer;
-  // }
 };
 
 #endif

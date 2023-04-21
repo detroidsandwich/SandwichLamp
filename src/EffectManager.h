@@ -5,45 +5,50 @@
 #include "ledeffect/FireEffect.h"
 #include "LedData.h"
 
-
-const int COUNT_MODE = 5; // don't foget update this
-String MODE_NAMES[COUNT_MODE] = {"RotateRainbow", "SparklesRoutine", "RainbowVertical", "Fire", "Matrix"};
-
 class EffectManager
 {
 public:
 
-    u_int8_t getCurrentEffectNumber() { return m_currentMode; }
-    LedEffect *getCurrentEffect() { return currentEffect; }
+    void setup(LedData *data)
+    {
+        updateEffect(data->currentEffect);
+        currentMode = data->currentEffect;
+
+        EffectData effectData = data->effectData[data->currentEffect];
+        currentEffect->setSpeed(effectData.speed);
+        currentEffect->setScale(effectData.speed);
+    }
 
     void update(uint32_t tick) { currentEffect->update(tick); }
 
-    void updateData(LedData &data)
+    void updateData(LedData *data)
     {
-        if (m_currentMode != data.numberEffect)
+        if (currentMode != data->currentEffect)
         {
-            updateEffect(safeNumberMode(data.numberEffect));
+            updateEffect(data->currentEffect);
+            currentMode = data->currentEffect;
         };
-        currentEffect->setSpeed(data.speed);
-        currentEffect->setScale(data.scale);
+
+        EffectData effectData = data->effectData[data->currentEffect];
+        currentEffect->setSpeed(effectData.speed);
+        currentEffect->setScale(effectData.scale);
     }
 
     static int8_t safeNumberMode(int8_t i)
     {
-        if (i >= COUNT_MODE)
+        if (i >= LedData::COUNT_MODE)
             return 0;
         if (i < 0)
-            return COUNT_MODE - 1;
+            return LedData::COUNT_MODE - 1;
         return i;
     }
 
 private:
-    int m_currentMode = 0;
-    LedEffect *currentEffect = new WhiteEffect();
+    LedEffect *currentEffect;
+    byte currentMode;
 
     void updateEffect(uint8_t effectNumber)
     {
-        m_currentMode = effectNumber;
         delete currentEffect;
         switch (effectNumber)
         {
@@ -62,10 +67,11 @@ private:
         case 4:
             currentEffect = new Matrix();
             break;
+        case 5:
+            currentEffect = new ColorBlink();
+            break;
         }
         // don't foget update COUNT_MODE
-        // Serial.print("updateEffect = ");
-        // Serial.println(effectNumber);
     }
 };
 

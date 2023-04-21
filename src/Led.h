@@ -17,12 +17,29 @@ class Led
 public:
   Led() {}
 
-  void setup()
+  void setup(LedData *data)
   {
     FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
     FastLED.setCorrection(TypicalSMD5050);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 500);
+
+    brightness = data->brightness;
+    // FastLED.setBrightness((brightness / 16) + 5);
     FastLED.setBrightness(brightness);
+
+    effectManager.setup(data);
+  }
+
+  void updateData(LedData *data)
+  {
+    if (brightness != data->brightness)
+    {
+      brightness = data->brightness;
+      // FastLED.setBrightness((brightness / 16) + 5);
+      FastLED.setBrightness(brightness);
+    }
+
+    effectManager.updateData(data);
   }
 
   void update(uint32_t ms)
@@ -32,31 +49,6 @@ public:
       effectManager.update(ms);
       FastLED.show();
     }
-  }
-
-  void updateData(LedData &data)
-  {
-    if (brightness != data.brightness)
-    {
-      brightness = data.brightness;
-      // FastLED.setBrightness((brightness / 16) + 5);
-       FastLED.setBrightness(brightness);
-    }
-
-    effectManager.updateData(data);
-  }
-
-  LedData getData()
-  {
-    LedEffect *effect = effectManager.getCurrentEffect();
-    LedData data = {
-        brightness,
-        effectManager.getCurrentEffectNumber(),
-        effect->getSpeed(),
-        effect->getScale()};
-        // effect->getName()};
-    Serial.println("LED getData();");
-    return data;
   }
 };
 
