@@ -1,15 +1,11 @@
 #ifndef WEB_H
 #define WEB_H
 
-// #pragma once
-
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include "WebPage.h"
-
-// class DhtManager;
 
 // REMOVE IT
 const char *ssid = "ssid";

@@ -2,17 +2,13 @@
 #define DHT_MANAGER_H
 
 #include <DHT.h>
-// #include "Web.h"
 #include "Automat.h"
 
 #define DHTPIN D1     // указываем пин, к которому подключен датчик температуры
 #define DHTTYPE DHT11 // указываем тип датчика (в данном случае DHT11)
 
-// const byte UPDATE_DHT_DELAY_MS = 200;
-
 class DhtManager
 {
-    // static const int UPDATE_DELAY_MS = 20000;
     DHT dht{DHTPIN, DHTTYPE};
     Automat tickDht{UPDATE_DELAY_MS};
 

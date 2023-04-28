@@ -16,10 +16,10 @@ public:
 
 	inline virtual void update(uint32_t tick) { Serial.println("not implement"); }
 
-	void setSpeed(uint8_t speed) { m_speed = speed; }
+	virtual void setSpeed(uint8_t speed) { m_speed = speed; }
 	uint8_t getSpeed() { return m_speed; }
 
-	void setScale(uint8_t scale) { m_scale = scale; }
+	virtual void setScale(uint8_t scale) { m_scale = scale; }
 	uint8_t getScale() { return m_scale; }
 
 	String getName() { return name; }

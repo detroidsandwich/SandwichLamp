@@ -3,12 +3,12 @@
 
 #include "ledeffect/LedEffect.h"
 #include "ledeffect/FireEffect.h"
+#include "ledeffect/LedNoiseEffect.h"
 #include "LedData.h"
 
 class EffectManager
 {
 public:
-
     void setup(LedData *data)
     {
         updateEffect(data->currentEffect);
@@ -68,7 +68,22 @@ private:
             currentEffect = new Matrix();
             break;
         case 5:
-            currentEffect = new ColorBlink();
+            currentEffect = new RainbowNoise();
+            break;
+        case 6:
+            currentEffect = new RainbowStripeNoise();
+            break;
+        case 7:
+            currentEffect = new ZebraNoise();
+            break;
+        case 8:
+            currentEffect = new PlasmaNoise();
+            break;
+        case 9:
+            currentEffect = new CloudNoise();
+            break;
+        case 10:
+            currentEffect = new LavaNoise();
             break;
         }
         // don't foget update COUNT_MODE

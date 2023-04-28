@@ -7,9 +7,6 @@
 // "{ id: 0, name: \"Q\", type: \"normal\", speed: 64, scale: 64 },\n";
 // "{ id: 1, name: \"W\", type: \"normal\", speed: 64, scale: 64 },\n";
 // "{ id: 2, name: \"E\", type: \"normal\", speed: 64, scale: 64 },\n";
-// "{ id: 3, name: \"R\", type: \"normal\", speed: 64, scale: 64 },\n";
-// "{ id: 4, name: \"T\", type: \"normal\", speed: 64, scale: 64 },\n";
-// "{ id: 5, name: \"Y\", type: \"normal\", speed: 64, scale: 64 },\n";
 // "];\n";
 static String addMode(EffectData *effects, byte size)
 {

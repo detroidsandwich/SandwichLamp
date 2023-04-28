@@ -82,6 +82,8 @@
             { id: 4, name: "T", type: "1", speed: 64, scale: 64 },
             { id: 5, name: "Y", type: "1", speed: 64, scale: 64 },
         ];
+        const EFFECT_TYPE_NORMAL = "normal";
+        const EFFECT_TYPE_COLOR = "color";
         const UPDATE_DHT_DELAY = 2000;
 
         window.onload = function () {
@@ -95,7 +97,7 @@
         function updateMode(index) {
             const mode = modes[index];
             switch (mode.type) {
-                case "1":
+                case EFFECT_TYPE_NORMAL:
                     setupNormal(mode);
                     break;
                 default:
