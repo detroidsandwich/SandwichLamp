@@ -31,24 +31,26 @@ public:
 
     virtual ~LedNoiseEffect() {}
 
-    void setSpeed(uint8_t speed) override { m_speed = speed / FACTOR_SPEED + MIN_SPEED; }
-
-    void setScale(uint8_t scale) override { m_scale = scale / FACTOR_SCALE + MIN_SCALE; }
+    void setEffectData(EffectData data) override
+    {
+        this->speed = data.speed / FACTOR_SPEED + MIN_SPEED;
+        this->scale = data.scale / FACTOR_SCALE + MIN_SCALE;
+    }
 
 protected:
     void fillNoiseLED()
     {
         uint8_t dataSmoothing = 0;
-        if (m_speed < 50)
+        if (speed < 50)
         {
-            dataSmoothing = 200 - (m_speed * 4);
+            dataSmoothing = 200 - (speed * 4);
         }
         for (int i = 0; i < MAX_DIMENSION; i++)
         {
-            int ioffset = m_scale * i;
+            int ioffset = scale * i;
             for (int j = 0; j < MAX_DIMENSION; j++)
             {
-                int joffset = m_scale * j;
+                int joffset = scale * j;
 
                 uint8_t data = inoise8(x + ioffset, y + joffset, z);
 
@@ -65,11 +67,11 @@ protected:
                 noise[i][j] = data;
             }
         }
-        z += m_speed;
+        z += speed;
 
         // apply slow drift to X and Y, just for visual variation.
-        x += m_speed / 8;
-        y -= m_speed / 16;
+        x += speed / 8;
+        y -= speed / 16;
 
         for (int i = 0; i < MATRIX_WIDTH; i++)
         {
@@ -105,14 +107,14 @@ protected:
     {
         for (int i = 0; i < MAX_DIMENSION; i++)
         {
-            int ioffset = m_scale * i;
+            int ioffset = scale * i;
             for (int j = 0; j < MAX_DIMENSION; j++)
             {
-                int joffset = m_scale * j;
+                int joffset = scale * j;
                 noise[i][j] = inoise8(x + ioffset, y + joffset, z);
             }
         }
-        z += m_speed;
+        z += speed;
     }
 };
 //
@@ -149,7 +151,6 @@ public:
 
     void update(uint32_t tick) override
     {
-        Serial.println(name +" "+ String(m_speed) +" "+ String(m_scale));
         if (loadingFlag)
         {
             loadingFlag = false;
@@ -169,16 +170,18 @@ class RainbowStripeNoise : public LedNoiseEffect
 
     uint8_t MIN_SPEED = 2;
     uint8_t MIN_SCALE = 4;
+
 public:
     RainbowStripeNoise() : LedNoiseEffect("RainbowStripeNoise") {}
 
-    void setSpeed(uint8_t speed) override { m_speed = speed / FACTOR_SPEED + MIN_SPEED; }
-
-    void setScale(uint8_t scale) override { m_scale = scale / FACTOR_SCALE + MIN_SCALE; }
+    void setEffectData(EffectData data) override
+    {
+        this->speed = data.speed / FACTOR_SPEED + MIN_SPEED;
+        this->scale = data.scale / FACTOR_SCALE + MIN_SCALE;
+    }
 
     void update(uint32_t tick) override
     {
-        Serial.println(name +" "+ String(m_speed) +" "+ String(m_scale));
         if (loadingFlag)
         {
             loadingFlag = false;
@@ -193,17 +196,20 @@ public:
 //
 class ZebraNoise : public LedNoiseEffect
 {
-        uint8_t FACTOR_SPEED = 22;
+    uint8_t FACTOR_SPEED = 22;
     uint8_t FACTOR_SCALE = 16;
 
     uint8_t MIN_SPEED = 2;
     uint8_t MIN_SCALE = 4;
+
 public:
     ZebraNoise() : LedNoiseEffect("ZebraNoise") {}
 
-    void setSpeed(uint8_t speed) override { m_speed = speed / FACTOR_SPEED + MIN_SPEED; }
-
-    void setScale(uint8_t scale) override { m_scale = scale / FACTOR_SCALE + MIN_SCALE; }
+    void setEffectData(EffectData data) override
+    {
+        this->speed = data.speed / FACTOR_SPEED + MIN_SPEED;
+        this->scale = data.scale / FACTOR_SCALE + MIN_SCALE;
+    }
 
     void update(uint32_t tick) override
     {

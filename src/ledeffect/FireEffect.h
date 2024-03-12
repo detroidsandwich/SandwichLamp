@@ -53,7 +53,7 @@ public:
 			pcnt = 0;
 		}
 		drawFrame(pcnt);
-		pcnt += (m_speed);
+		pcnt += (speed);
 	}
 
 private:
@@ -107,7 +107,7 @@ private:
 						(((100.0 - pcnt) * matrixValue[y][newX] + pcnt * matrixValue[y - 1][newX]) / 100.0) - pgm_read_byte(&(valueMask[y][newX]));
 
 					CRGB color = CHSV(
-						m_scale * 2.5 + pgm_read_byte(&(hueMask[y][newX])), // H
+						scale * 2.5 + pgm_read_byte(&(hueMask[y][newX])), // H
 						255,												// S
 						(uint8_t)max(0, nextv)								// V
 					);
@@ -139,7 +139,7 @@ private:
 			if (x > 15)
 				newX = x - 15;
 			CRGB color = CHSV(
-				m_scale * 2.5 + pgm_read_byte(&(hueMask[0][newX])),							   // H
+				scale * 2.5 + pgm_read_byte(&(hueMask[0][newX])),							   // H
 				255,																		   // S
 				(uint8_t)(((100.0 - pcnt) * matrixValue[0][newX] + pcnt * line[newX]) / 100.0) // V
 			);

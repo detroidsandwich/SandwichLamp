@@ -47,6 +47,7 @@
         "initializer_list": "cpp",
         "ranges": "cpp",
         "stdexcept": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "istream": "cpp"
     }
 }

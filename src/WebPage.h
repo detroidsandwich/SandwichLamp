@@ -4,9 +4,9 @@
 #include "DhtManager.h"
 
 // [\n";
-// "{ id: 0, name: \"Q\", type: \"normal\", speed: 64, scale: 64 },\n";
-// "{ id: 1, name: \"W\", type: \"normal\", speed: 64, scale: 64 },\n";
-// "{ id: 2, name: \"E\", type: \"normal\", speed: 64, scale: 64 },\n";
+// { id: 0, name: \"Q\", type: EFFECT_TYPE_NORMAL, speed: 64, scale: 64, hue: 0 },\n";
+// { id: 1, name: \"W\", type: EFFECT_TYPE_COLOR, speed: 64, scale: 64, hue: 0 },\n";
+// { id: 2, name: \"E\", type: EFFECT_TYPE_NORMAL, speed: 64, scale: 64, hue: 0 },\n";
 // "];\n";
 static String addMode(EffectData *effects, byte size)
 {
@@ -16,9 +16,10 @@ static String addMode(EffectData *effects, byte size)
         EffectData effect = effects[i];
         modesArray += "{ id: " + String(effect.id);
         modesArray += ", name: \"" + effect.name;
-        modesArray += "\", type: \"" + effect.type;
-        modesArray += "\", speed: " + String(effect.speed);
+        modesArray += "\", type: " + String(effect.type);
+        modesArray += ", speed: " + String(effect.speed);
         modesArray += ", scale: " + String(effect.scale);
+        modesArray += ", hue: " + String(effect.hue);
         modesArray += "},\n";
     }
     modesArray += "];\n";
@@ -28,12 +29,6 @@ static String addMode(EffectData *effects, byte size)
 
 static String createWebPage(LedData data)
 {
-    // htmlPage += "var modeIndex = " + String(data.currentEffect) + ";\n";
-    // htmlPage += "var brightness = " + String(data.brightness) + ";\n";
-    // htmlPage += "const maxSlider = " + String(MAX_SLIDER_VALUE) + ";\n";
-    // htmlPage += "const factor = " + String(FACTOR_VALUE) + ";\n";
-    // htmlPage += "const modes = " + addMode(data.effectData, LedData::COUNT_MODE);
-
     String htmlPage = "";
     htmlPage += "<!DOCTYPE html>\n";
     htmlPage += "<html>\n";
@@ -97,16 +92,54 @@ static String createWebPage(LedData data)
     htmlPage += "font-size: 18px;\n";
     htmlPage += "margin-bottom: 10px;\n";
     htmlPage += "}\n";
+    htmlPage += ".color-picker {\n";
+    htmlPage += "display: inline-block;\n";
+    htmlPage += "flex-basis: 0;\n";
+    htmlPage += "flex-grow: 1;\n";
+    htmlPage += "max-width: 100%;\n";
+    htmlPage += "padding: 20px;\n";
+    htmlPage += "border-radius: 10px;\n";
+    htmlPage += "background-color: #f0f0f0;\n";
+    htmlPage += "box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);\n";
+    htmlPage += "margin-bottom: 16px;\n";
+    htmlPage += "}\n";
+    htmlPage += ".color-picker input[type=\"range\"] {\n";
+    htmlPage += "width: 200px;\n";
+    htmlPage += "height: 20px;\n";
+    htmlPage += "border-radius: 10px;\n";
+    htmlPage += "overflow: hidden;\n";
+    htmlPage += "appearance: none;\n";
+    htmlPage += "background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);\n";
+    htmlPage += "outline: none;\n";
+    htmlPage += "margin: 0;\n";
+    htmlPage += "padding: 0;\n";
+    htmlPage += "}\n";
+    htmlPage += ".color-picker input[type=\"range\"]::-webkit-slider-thumb {\n";
+    htmlPage += "appearance: none;\n";
+    htmlPage += "border-radius: 50%;\n";
+    htmlPage += "background-color: #fff;\n";
+    htmlPage += "width: 20px;\n";
+    htmlPage += "height: 20px;\n";
+    htmlPage += "cursor: pointer;\n";
+    htmlPage += "}\n";
+    htmlPage += ".color-picker .selected-color {\n";
+    htmlPage += "display: inline-block;\n";
+    htmlPage += "width: 50px;\n";
+    htmlPage += "height: 50px;\n";
+    htmlPage += "border-radius: 50%;\n";
+    htmlPage += "margin-left: 10px;\n";
+    htmlPage += "vertical-align: middle;\n";
+    htmlPage += "}\n";
     htmlPage += "</style>\n";
     htmlPage += "<script>\n";
-
+    htmlPage += "const EFFECT_TYPE_NORMAL = "+ String(EFFECT_TYPE_NORMAL) +";\n";
+    htmlPage += "const EFFECT_TYPE_COLOR = "+ String(EFFECT_TYPE_COLOR) +";\n";
+    htmlPage += "const UPDATE_DHT_DELAY = " + String(DhtManager::UPDATE_DELAY_MS) + ";\n";
+    htmlPage += "const MAX_SLIDER = " + String(MAX_SLIDER_VALUE) + ";\n";
+    htmlPage += "const FACTOR = " + String(FACTOR_VALUE) + ";\n";
     htmlPage += "var modeIndex = " + String(data.currentEffect) + ";\n";
     htmlPage += "var brightness = " + String(data.brightness) + ";\n";
-    htmlPage += "const maxSlider = " + String(MAX_SLIDER_VALUE) + ";\n";
-    htmlPage += "const factor = " + String(FACTOR_VALUE) + ";\n";
     htmlPage += "const modes = " + addMode(data.effectData, LedData::COUNT_MODE);
-    htmlPage += "const UPDATE_DHT_DELAY = " + String(DhtManager::UPDATE_DELAY_MS) + ";\n";
-
     htmlPage += "window.onload = function () {\n";
     htmlPage += "setupTempHum(document);\n";
     htmlPage += "setupSlider(document.getElementById(\"brightness\"), brightness, function (newValue) {\n";
@@ -115,10 +148,14 @@ static String createWebPage(LedData data)
     htmlPage += "updateMode(modeIndex);\n";
     htmlPage += "};\n";
     htmlPage += "function updateMode(index) {\n";
-    htmlPage += "const mode = modes[index];\n";
+    htmlPage += "let mode = modes[index];\n";
     htmlPage += "switch (mode.type) {\n";
-    htmlPage += "case \"1\":\n";
+    htmlPage += "case EFFECT_TYPE_NORMAL:\n";
     htmlPage += "setupNormal(mode);\n";
+    htmlPage += "break;\n";
+    htmlPage += "case EFFECT_TYPE_COLOR:\n";
+    htmlPage += "setupNormal(mode);\n";
+    htmlPage += "setupColorPicker(mode);\n";
     htmlPage += "break;\n";
     htmlPage += "default:\n";
     htmlPage += "setupNormal(mode);\n";
@@ -132,6 +169,7 @@ static String createWebPage(LedData data)
     htmlPage += "setupSlider(document.getElementById(\"scale\"), mode.scale, function (newValue) {\n";
     htmlPage += "mode.scale = newValue;\n";
     htmlPage += "});\n";
+    htmlPage += "document.getElementById(\"color\").style.display = 'none';\n";
     htmlPage += "};\n";
     htmlPage += "function setupModeSlider(element, mode) {\n";
     htmlPage += "let slider = element.querySelector(\"#slider\");\n";
@@ -178,11 +216,11 @@ static String createWebPage(LedData data)
     htmlPage += "function setupSlider(element, initialValue, callback) {\n";
     htmlPage += "let slider = element.querySelector(\"#slider\");\n";
     htmlPage += "let output = element.querySelector(\"#output\");\n";
-    htmlPage += "let value = Math.round(initialValue / factor);\n";
+    htmlPage += "let value = Math.round(initialValue / FACTOR);\n";
     htmlPage += "var prevSliderValue = value;\n";
     htmlPage += "output.innerHTML = value;\n";
     htmlPage += "slider.value = value;\n";
-    htmlPage += "slider.max = Math.round(maxSlider / factor);\n";
+    htmlPage += "slider.max = Math.round(MAX_SLIDER / FACTOR);\n";
     htmlPage += "slider.oninput = function () {\n";
     htmlPage += "if (prevSliderValue != this.value) {\n";
     htmlPage += "updateSliderData(element, this.value, callback);\n";
@@ -206,7 +244,7 @@ static String createWebPage(LedData data)
     htmlPage += "let xhttp = new XMLHttpRequest();\n";
     htmlPage += "let slider = element.querySelector(\"#slider\");\n";
     htmlPage += "let output = element.querySelector(\"#output\");\n";
-    htmlPage += "let responseValue = (value * factor >= maxSlider) ? maxSlider : value * factor;\n";
+    htmlPage += "let responseValue = (value * FACTOR >= MAX_SLIDER) ? MAX_SLIDER : value * FACTOR;\n";
     htmlPage += "xhttp.onreadystatechange = function () {\n";
     htmlPage += "if (this.readyState == 4 && this.status == 200) {\n";
     htmlPage += "output.innerHTML = value\n";
@@ -236,11 +274,32 @@ static String createWebPage(LedData data)
     htmlPage += "xhttp.open(\"GET\", \"/dht\", true);\n";
     htmlPage += "xhttp.send();\n";
     htmlPage += "}\n";
+    htmlPage += "var colorSliderCallback;\n";
+    htmlPage += "function setupColorPicker(mode) {\n";
+    htmlPage += "document.getElementById(\"color\").style.display = 'inline-block';\n";
+    htmlPage += "let colorInput = document.getElementById('colorInput');\n";
+    htmlPage += "let selectedColor = document.getElementById('selectedColor');\n";
+    htmlPage += "let xhttp = new XMLHttpRequest();\n";
+    htmlPage += "xhttp.onreadystatechange = function () {\n";
+    htmlPage += "if (this.readyState == 4 && this.status == 200) {\n";
+    htmlPage += "let hue = colorInput.value;\n";
+    htmlPage += "selectedColor.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;\n";
+    htmlPage += "mode.hue = hue;\n";
+    htmlPage += "}\n";
+    htmlPage += "}\n";
+    htmlPage += "colorInput.value = mode.hue;\n";
+    htmlPage += "selectedColor.style.backgroundColor = `hsl(${mode.hue}, 100%, 50%)`;\n";
+    htmlPage += "colorInput.removeEventListener(\"mouseup\", colorSliderCallback);\n";
+    htmlPage += "colorSliderCallback = function () {\n";
+    htmlPage += "xhttp.open(\"GET\", \"/color?value=\" + this.value, true);\n";
+    htmlPage += "xhttp.send();\n";
+    htmlPage += "};\n";
+    htmlPage += "colorInput.addEventListener(\"mouseup\", colorSliderCallback);\n";
+    htmlPage += "}\n";
     htmlPage += "</script>\n";
     htmlPage += "</head>\n";
     htmlPage += "<body>\n";
     htmlPage += "<h1>SandwichLamp</h1>\n";
-    htmlPage += "<!-- <p>Temperature</p> -->\n";
     htmlPage += "<div class=\"card-container\">\n";
     htmlPage += "<div class=\"card\">\n";
     htmlPage += "<div class=\"label\">Temperature: <span id=\"temp\">-</span>&deg;C</div>\n";
@@ -257,6 +316,11 @@ static String createWebPage(LedData data)
     htmlPage += "<button id=\"btnDecrement\" class=\"btn\">-</button>\n";
     htmlPage += "<input type=\"range\" id=\"slider\" min=\"0\">\n";
     htmlPage += "<button id=\"btnIncrement\" class=\"btn\">+</button>\n";
+    htmlPage += "</div>\n";
+    htmlPage += "<div class=\"color-picker\" id=\"color\">\n";
+    htmlPage += "<div class=\"label\">Choose color:</div>\n";
+    htmlPage += "<input type=\"range\" id=\"colorInput\" min=\"0\" max=\"255\" step=\"1\">\n";
+    htmlPage += "<div class=\"selected-color\" id=\"selectedColor\"></div>\n";
     htmlPage += "</div>\n";
     htmlPage += "<div class=\"card\" id=\"speed\">\n";
     htmlPage += "<div class=\"label\">Speed: <span id=\"output\">0</span></div>\n";

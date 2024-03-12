@@ -68,23 +68,66 @@
             font-size: 18px;
             margin-bottom: 10px;
         }
+
+        .color-picker {
+            display: inline-block;
+
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 16px;
+        }
+
+        .color-picker input[type="range"] {
+            width: 200px;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            appearance: none;
+            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            outline: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .color-picker input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            border-radius: 50%;
+            background-color: #fff;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .color-picker .selected-color {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
     </style>
     <script>
-        var modeIndex = 0;
-        var brightness = 64;
-        const maxSlider = 255;
-        const factor = 16;
-        var modes = [
-            { id: 0, name: "Q", type: "1", speed: 64, scale: 64 },
-            { id: 1, name: "W", type: "1", speed: 64, scale: 64 },
-            { id: 2, name: "E", type: "1", speed: 64, scale: 64 },
-            { id: 3, name: "R", type: "1", speed: 64, scale: 64 },
-            { id: 4, name: "T", type: "1", speed: 64, scale: 64 },
-            { id: 5, name: "Y", type: "1", speed: 64, scale: 64 },
-        ];
         const EFFECT_TYPE_NORMAL = "normal";
         const EFFECT_TYPE_COLOR = "color";
         const UPDATE_DHT_DELAY = 2000;
+        const MAX_SLIDER = 255;
+        const FACTOR = 16;
+        var modeIndex = 0;
+        var brightness = 64;
+        var modes = [
+            { id: 0, name: "Q", type: EFFECT_TYPE_NORMAL, speed: 64, scale: 64, hue: 0 },
+            { id: 1, name: "W", type: EFFECT_TYPE_COLOR, speed: 64, scale: 64, hue: 0 },
+            { id: 2, name: "E", type: EFFECT_TYPE_NORMAL, speed: 64, scale: 64, hue: 0 },
+            { id: 3, name: "R", type: EFFECT_TYPE_COLOR, speed: 64, scale: 64, hue: 64 },
+            { id: 4, name: "T", type: EFFECT_TYPE_NORMAL, speed: 64, scale: 64, hue: 0 },
+            { id: 5, name: "Y", type: EFFECT_TYPE_COLOR, speed: 64, scale: 64, hue: 0 },
+        ];
 
         window.onload = function () {
             setupTempHum(document);
@@ -95,12 +138,19 @@
         };
 
         function updateMode(index) {
-            const mode = modes[index];
+            let mode = modes[index];
             switch (mode.type) {
                 case EFFECT_TYPE_NORMAL:
+                    document.getElementById("color").style.display = 'none';
                     setupNormal(mode);
                     break;
+                case EFFECT_TYPE_COLOR:
+                    document.getElementById("color").style.display = 'inline-block';
+                    setupNormal(mode);
+                    setupColorPicker(mode);
+                    break;
                 default:
+                    document.getElementById("color").style.display = 'none';
                     setupNormal(mode);
             }
         };
@@ -113,6 +163,7 @@
             setupSlider(document.getElementById("scale"), mode.scale, function (newValue) {
                 mode.scale = newValue;
             });
+            document.getElementById("color").style.display = 'none';
         };
 
         function setupModeSlider(element, mode) {
@@ -166,11 +217,11 @@
         function setupSlider(element, initialValue, callback) {
             let slider = element.querySelector("#slider");
             let output = element.querySelector("#output");
-            let value = Math.round(initialValue / factor);
+            let value = Math.round(initialValue / FACTOR);
             var prevSliderValue = value;
             output.innerHTML = value;
             slider.value = value;
-            slider.max = Math.round(maxSlider / factor);
+            slider.max = Math.round(MAX_SLIDER / FACTOR);
             slider.oninput = function () {
                 if (prevSliderValue != this.value) {
                     updateSliderData(element, this.value, callback);
@@ -196,7 +247,7 @@
             let xhttp = new XMLHttpRequest();
             let slider = element.querySelector("#slider");
             let output = element.querySelector("#output");
-            let responseValue = (value * factor >= maxSlider) ? maxSlider : value * factor;
+            let responseValue = (value * FACTOR >= MAX_SLIDER) ? MAX_SLIDER : value * FACTOR;
 
             xhttp.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
@@ -232,12 +283,38 @@
             xhttp.send();
         }
 
+        var colorSliderCallback;
+
+        function setupColorPicker(mode) {
+            let colorInput = document.getElementById('colorInput');
+            let selectedColor = document.getElementById('selectedColor');
+            let xhttp = new XMLHttpRequest();
+
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    let hue = colorInput.value;
+                    selectedColor.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
+                    mode.hue = hue;
+                }
+            }
+
+            colorInput.value = mode.hue;
+            selectedColor.style.backgroundColor = `hsl(${mode.hue}, 100%, 50%)`;
+
+            colorInput.removeEventListener("mouseup", colorSliderCallback);
+            colorSliderCallback = function () {
+                // console.log("color " + this.value + " " + mode.name);
+                xhttp.open("GET", "/color?value=" + this.value, true);
+                xhttp.send();
+            };
+            colorInput.addEventListener("mouseup", colorSliderCallback);
+        }
+
     </script>
 </head>
 
 <body>
     <h1>SandwichLamp</h1>
-    <!-- <p>Temperature</p> -->
     <div class="card-container">
         <div class="card">
             <div class="label">Temperature: <span id="temp">-</span>&deg;C</div>
@@ -254,6 +331,11 @@
             <button id="btnDecrement" class="btn">-</button>
             <input type="range" id="slider" min="0">
             <button id="btnIncrement" class="btn">+</button>
+        </div>
+        <div class="color-picker" id="color">
+            <div class="label">Choose color:</div>
+            <input type="range" id="colorInput" min="0" max="255" step="1">
+            <div class="selected-color" id="selectedColor"></div>
         </div>
         <div class="card" id="speed">
             <div class="label">Speed: <span id="output">0</span></div>

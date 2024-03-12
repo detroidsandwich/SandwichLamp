@@ -8,8 +8,8 @@
 #include "WebPage.h"
 
 // REMOVE IT
-const char *ssid = "ssid";
-const char *password = "password";
+const char *ssid = "My_little_MERCUSYS";
+const char *password = "chornagora2008";
 
 /* Настройки IP адреса */
 // IPAddress apIP(172, 217, 28, 1);
@@ -90,6 +90,14 @@ public:
                 data.effectData[data.currentEffect].scale = value;
                 callback(data);
                 server.send(200, "text/plain", "Scale set to " + String(value)); });
+                
+    server.on("/color", HTTP_GET, [callback, this]()
+              {
+
+                byte value = server.arg("value").toInt();
+                data.effectData[data.currentEffect].hue = value;
+                callback(data);
+                server.send(200, "text/plain", "Color set to " + String(value)); });
 
     server.on("/dht", HTTP_GET, [this]()
               {

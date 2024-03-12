@@ -38,8 +38,6 @@ private:
         float temp = dht.readTemperature(); // измеряем температуру
         float hum = dht.readHumidity();     // измеряем влажность
         (*callback)(temp,hum);
-        String request = "Temperature: " + String(temp) + " °C, Humidity: " + String(hum) + " %";
-        Serial.println(request);
     }
 };
 

@@ -14,9 +14,8 @@ public:
         updateEffect(data->currentEffect);
         currentMode = data->currentEffect;
 
-        EffectData effectData = data->effectData[data->currentEffect];
-        currentEffect->setSpeed(effectData.speed);
-        currentEffect->setScale(effectData.speed);
+        // EffectData effectData = data->effectData[data->currentEffect];
+        currentEffect->setEffectData(data->effectData[data->currentEffect]);
     }
 
     void update(uint32_t tick) { currentEffect->update(tick); }
@@ -29,9 +28,8 @@ public:
             currentMode = data->currentEffect;
         };
 
-        EffectData effectData = data->effectData[data->currentEffect];
-        currentEffect->setSpeed(effectData.speed);
-        currentEffect->setScale(effectData.scale);
+        // EffectData effectData = data->effectData[data->currentEffect];
+        currentEffect->setEffectData(data->effectData[data->currentEffect]);
     }
 
     static int8_t safeNumberMode(int8_t i)
@@ -68,21 +66,24 @@ private:
             currentEffect = new Matrix();
             break;
         case 5:
-            currentEffect = new RainbowNoise();
+            currentEffect = new ColorBlink();
             break;
         case 6:
-            currentEffect = new RainbowStripeNoise();
+            currentEffect = new RainbowNoise();
             break;
         case 7:
-            currentEffect = new ZebraNoise();
+            currentEffect = new RainbowStripeNoise();
             break;
         case 8:
-            currentEffect = new PlasmaNoise();
+            currentEffect = new ZebraNoise();
             break;
         case 9:
-            currentEffect = new CloudNoise();
+            currentEffect = new PlasmaNoise();
             break;
         case 10:
+            currentEffect = new CloudNoise();
+            break;
+        case 11:
             currentEffect = new LavaNoise();
             break;
         }
