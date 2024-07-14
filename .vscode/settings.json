@@ -48,6 +48,10 @@
         "ranges": "cpp",
         "stdexcept": "cpp",
         "cinttypes": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "regex": "cpp",
+        "bitset": "cpp",
+        "ctime": "cpp",
+        "sstream": "cpp"
     }
 }

@@ -5,52 +5,80 @@
 #include <FastLED.h>
 #include "LedSettings.h"
 #include "Automat.h"
-#include "EffectManager.h"
-#include "LedData.h"
+#include "Counter.h"
 
 class Led
 {
-  Automat tickEffect{16};
-  EffectManager effectManager;
   byte brightness = 255; // todo
+  bool lightMode = false;
+  Counter _counter{};
 
 public:
   Led(){};
 
-  void setup(LedData *data)
+  void setup()
   {
     FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
     FastLED.setCorrection(TypicalSMD5050);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 500);
-
-    updateBrightness(data->brightness);
-
-    effectManager.setup(data);
+    FastLED.setBrightness(brightness);
   }
 
-  void updateData(LedData *data)
+  void update(){
+     FastLED.show();
+  }
+
+  void updateMode()
   {
-    if (brightness != data->brightness)
+    if (lightMode)
     {
-      updateBrightness(data->brightness);
+      Serial.println("update white");
+      fillLeds(CRGB::White);
     }
-
-    effectManager.updateData(data);
-  }
-
-  void update(uint32_t ms)
-  {
-    if (tickEffect.tick(ms))
+    else
     {
-      effectManager.update(ms);
-      FastLED.show();
+      Serial.printf("updateCounter all %d enable %d disable %d alarm %d maintenance %d \n", _counter.all, _counter.enabled, _counter.disabled, _counter.alarm, _counter.maintenance);
+      CRGB color = getStatusColor(_counter);
+
+      fillLeds(color);
     }
   }
 
-  void updateBrightness(byte newBrigthness)
+  void setCounter(Counter counter)
   {
-    brightness = newBrigthness;
-    FastLED.setBrightness((brightness / 9) + 2);
+    Serial.printf("setCounter all %d enable %d disable %d alarm %d maintenance %d \n", counter.all, counter.enabled, counter.disabled, counter.alarm, counter.maintenance);
+    _counter = counter;
+  }
+
+  CRGB getStatusColor(Counter counter)
+  {
+    uint8_t hue;
+    uint16_t all;
+    if (counter.all > 0)
+    {
+      all = counter.all;
+    }
+    else
+    {
+      all = 1;
+    }
+
+    if (((100 * counter.alarm) / all) > 10)
+    {
+      hue = HSVHue::HUE_BLUE;
+    }
+    else
+    {
+      hue = (HSVHue::HUE_GREEN * counter.enabled) / all;
+    }
+
+    return CHSV(hue, 255, 255);
+  }
+
+  void changeLightMode()
+  {
+    lightMode = !lightMode;
+    Serial.printf("LightMode has been changed %d\n", lightMode);
   }
 };
 

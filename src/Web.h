@@ -4,45 +4,32 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
-#include <ArduinoJson.h>
-#include "WebPage.h"
-
-// REMOVE IT
-const char *ssid = "My_little_MERCUSYS";
-const char *password = "chornagora2008";
-
-/* Настройки IP адреса */
-// IPAddress apIP(172, 217, 28, 1);
-// IPAddress subnet(255, 255, 255, 0);
-
-ESP8266WebServer server{80};
+#include <ESP8266HTTPClient.h>
+#include "Config.h"
+#include "Counter.h"
 
 class Web
 {
-  const String DOMAIN_NAME = "sandwichlamp"; // sandwichlamp.local
+  WiFiClient client;
+  Automat updateCounterTick{60000};
+  std::function<void(Counter)> _callback;
 
 public:
   Web() {}
   ~Web() {}
 
-  LedData data;
-  float temp;
-  float humidity;
+  // Counter counter;
 
-  void setup(LedData initLedData, std::function<void(LedData)> callback)
+  void setup(std::function<void(Counter)> callback)
   {
-    // WiFi.mode(WIFI_AP);
-    // WiFi.softAP("SandwichLamp");
-    // WiFi.softAPConfig(apIP, apIP, subnet);
-
-    data = initLedData;
-
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
-    while (WiFi.status() != WL_CONNECTED)
+    int8_t retryCount = 30;
+    while (WiFi.status() != WL_CONNECTED && retryCount > 0)
     {
       delay(250);
+      retryCount--;
       Serial.print(".");
     }
     Serial.println("");
@@ -51,80 +38,89 @@ public:
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
 
-    if (MDNS.begin(DOMAIN_NAME))
+    _callback = callback;
+
+    update();
+  }
+
+  void update(uint32_t ms)
+  {
+    if (updateCounterTick.tick(ms))
     {
-      Serial.println("MDNS responder started");
+      update();
     }
-    else
-    {
-      Serial.println("Error setting up MDNS responder!");
-    }
-
-    server.on("/", [this]()
-              { server.send(200, "text/html", createWebPage(data)); });
-
-    server.on("/mode", HTTP_GET, [callback, this]()
-              {
-                byte value = server.arg("value").toInt();
-                data.currentEffect = value;
-                callback(data);
-                server.send(200, "text/plain", "Mode set to " + String(value)); });
-
-    server.on("/brightness", HTTP_GET, [callback, this]()
-              {
-                byte value = server.arg("value").toInt();
-                data.brightness = value;
-                callback(data);
-                server.send(200, "text/plain", "Brightness set to " + String(value)); });
-
-    server.on("/speed", HTTP_GET, [callback, this]()
-              {
-                byte value = server.arg("value").toInt();
-                data.effectData[data.currentEffect].speed = value;
-                callback(data);
-                server.send(200, "text/plain", "Speed set to " + String(value)); });
-
-    server.on("/scale", HTTP_GET, [callback, this]()
-              {
-                byte value = server.arg("value").toInt();
-                data.effectData[data.currentEffect].scale = value;
-                callback(data);
-                server.send(200, "text/plain", "Scale set to " + String(value)); });
-                
-    server.on("/color", HTTP_GET, [callback, this]()
-              {
-
-                byte value = server.arg("value").toInt();
-                data.effectData[data.currentEffect].hue = value;
-                callback(data);
-                server.send(200, "text/plain", "Color set to " + String(value)); });
-
-    server.on("/dht", HTTP_GET, [this]()
-              {
-                StaticJsonDocument<200> doc;
-                doc["temperature"] = String(temp);
-                doc["humidity"] = humidity;
-                String output;
-                serializeJson(doc, output);
-                server.send(200, "application/json", output); });
-
-    // Запуск сервера
-    server.begin();
-    Serial.println("Server started");
-
-    MDNS.addService("http", "tcp", 80);
   }
 
   void update()
   {
-    // MDNS.update();
-    server.handleClient();
+    Counter counter = requestUrl();
+    Serial.printf("requestUrl all %d enable %d disable %d alarm %d maintenance %d \n", counter.all, counter.enabled, counter.disabled, counter.alarm, counter.maintenance);
+    _callback(counter);
   }
 
-  void updateDht(float temperature, float humidity)
+  Counter requestUrl()
   {
-    this->temp = temperature;
-    this->humidity = humidity;
+    Counter counter;
+    HTTPClient http;
+
+    http.begin(client, serverUrl);
+
+    Serial.println(serverUrl);
+    int httpCode = http.GET();
+
+    if (httpCode == 200)
+    {
+      Serial.println("success");
+
+      WiFiClient *stream = http.getStreamPtr();
+      do
+      {
+        String line = stream->readStringUntil('\n');
+        // Serial.println(line);
+        delay(1);
+        if (line.indexOf("Група 6") >= 0)
+        {
+          String sub = line.substring(0, 60);
+          if (sub.indexOf("Київ") >= 0)
+          {
+            counter.all++;
+            char status = sub.charAt(7);
+            switch (status)
+            {
+            case '1':
+              counter.enabled++;
+              break;
+
+            case '2':
+              counter.disabled++;
+              break;
+
+            case '3':
+              counter.maintenance++;
+              break;
+
+            case '4':
+              counter.maintenance++;
+              break;
+
+            case '-':
+              counter.alarm++;
+              break;
+            }
+          }
+        }
+      } while (stream->connected() && stream->available());
+    }
+    else
+    {
+      Serial.print("Error on HTTP request: ");
+      Serial.println(httpCode);
+    }
+
+    // Serial.printf("all %d enable %d disable %d alarm %d maintenance %d \n", counter.all, counter.enabled, counter.disabled, counter.alarm, counter.maintenance);
+
+    http.end(); // Free the resources
+    return counter;
   }
 };
 

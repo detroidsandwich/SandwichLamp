@@ -1,28 +1,34 @@
 #include <Esp.h>
 #include "Led.h"
 #include "Web.h"
-#include "DhtManager.h"
+#include "button/Button.h"
 
 Led led;
 Web web;
-DhtManager dht;
+Button flashButton{D3};
 
 void setup()
 {
-  LedData ledData;
   Serial.begin(115200);
-  led.setup(&ledData);
-  web.setup(ledData, [](LedData data)
-            { led.updateData(&data); });
-  dht.setup([](float temp, float hum)
-            { web.updateDht(temp, hum); });
+  flashButton.begin();
+  led.setup();
+
+  web.setup([](Counter counter)
+            {  
+            Serial.printf("callback %d", counter.all);
+            led.setCounter(counter); 
+            led.updateMode(); });
 };
 
 void loop()
 {
   uint32_t ms = millis();
-  led.update(ms);
-  web.update();
-  dht.update(ms, [](float temp, float hum)
-             { web.updateDht(temp, hum); });
+  if (flashButton.updateAndCheckPeleased())
+  {
+    Serial.println("!!!!!Button released!!!!!");
+    led.changeLightMode();
+    led.updateMode();
+  }
+  led.update();
+  web.update(ms);
 };

@@ -171,9 +171,17 @@ uint32_t colorXY(uint8_t x, uint8_t y)
 
 void clearLeds()
 {
-  for (int32_t i = 0; i < (MATRIX_WIDTH * MATRIX_HEIGHT); i++)
+  for (uint16_t i = 0; i < (MATRIX_WIDTH * MATRIX_HEIGHT); i++)
   {
     leds[i] = CRGB::Black;
+  }
+}
+
+void fillLeds(CRGB color)
+{
+  for (uint16_t i = 0; i < (MATRIX_WIDTH * MATRIX_HEIGHT); i++)
+  {
+    leds[i] = color;
   }
 }
 
