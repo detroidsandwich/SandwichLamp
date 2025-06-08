@@ -4,6 +4,11 @@
 #include <ESP8266WebServer.h>
 #include <LittleFS.h> // Для работы с файловой системой LittleFS
 #include <ArduinoJson.h>
+#include <ESP8266mDNS.h>
+#include "secrets.h"
+
+// --- Имя хоста для mDNS ---
+const char* host = "sandwichlamp"; // Твоя лампа будет доступна по адресу http://sandwichlamp.local
 
 // --- Настройки светодиодов ---
 #define LED_PIN     D2
@@ -134,36 +139,19 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\nStarting GyverLampWeb...");
 
-  // Инициализация LittleFS
   if (!LittleFS.begin()) {
     Serial.println("An Error has occurred while mounting LittleFS");
     return;
   }
   Serial.println("LittleFS mounted successfully");
 
-    // --- ДОБАВЬ ЭТОТ БЛОК ДЛЯ ОТЛАДКИ ---
-  Serial.println("Listing LittleFS files:");
-  Dir dir = LittleFS.openDir("/");
-  while (dir.next()) {
-    Serial.print("  File: ");
-    Serial.print(dir.fileName());
-    Serial.print(" Size: ");
-    Serial.println(dir.fileSize());
-  }
-  Serial.println("--- End of LittleFS file list ---");
-  // --- КОНЕЦ БЛОКА ОТЛАДКИ ---
-
-  // Инициализация FastLED
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
-  FastLED.setBrightness(currentBrightness);
-  fill_solid(leds, NUM_LEDS, CRGB::Black); // Погасим светодиоды при старте
-  FastLED.show();
+  // ... (FastLED initialization) ...
 
   // --- Подключение к Wi-Fi ---
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.println(WIFI_SSID); // <<<--- Используем WIFI_SSID из secrets.h
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -173,14 +161,21 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
+  // --- Инициализация mDNS ---
+  if (!MDNS.begin(host)) { // Запускаем mDNS с именем хоста "gyverlamp"
+    Serial.println("Error setting up MDNS responder!");
+  } else {
+    Serial.println("MDNS responder started");
+    Serial.printf("Access your lamp at http://%s.local\n", host);
+  }
+
   // --- Настройка веб-сервера ---
   server.on("/", handleRoot);
   server.on("/brightness", handleBrightness);
   server.on("/speed", handleSpeed);
   server.on("/mode", handleMode);
-  server.on("/state", handleGetState); // Новый эндпоинт для получения состояния
-  // Используем handleStaticFile для всех остальных запросов, которые могут быть файлами
-  server.onNotFound(handleStaticFile); // handleNotFound будет вызван, если handleStaticFile не найдет файл
+  server.on("/state", handleGetState);
+  server.onNotFound(handleStaticFile);
 
   server.begin();
   Serial.println("HTTP server started");
@@ -189,19 +184,16 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  // Если прошло достаточно времени с последнего обновления кадра
   if (currentMillis - previousMillis >= frameDelayMillis) {
-    previousMillis = currentMillis; // Запоминаем текущее время
+    previousMillis = currentMillis;
 
-    // Устанавливаем яркость перед отрисовкой каждого кадра
     FastLED.setBrightness(currentBrightness);
-
-    // Вызываем текущий режим
     lampModes[currentMode]();
     FastLED.show();
   }
 
-  server.handleClient(); // Обязательно вызываем это для обработки входящих запросов
+  server.handleClient();
+  MDNS.update(); // Обязательно вызываем MDNS.update() в loop()
 }
 
 // --- Реализация режимов ---
