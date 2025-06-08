@@ -1,97 +1,65 @@
 #include <Arduino.h>
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h> // Для работы с веб-сервером
-#include <FS.h>               // Для работы с файловой системой (LittleFS)
-
-// --- Настройки Wi-Fi ---
-const char* ssid = "PLAY_Swiatlowod_D9DB";   
-const char* password = "Qs@#7mrGmnPG"; 
+#include <ESP8266WebServer.h>
+#include <LittleFS.h> // Для работы с файловой системой LittleFS
 
 // --- Настройки светодиодов ---
-#define LED_PIN     D2        // Пин, к которому подключены данные светодиодной ленты (например, D2 на NodeMCU)
-#define NUM_LEDS    256       // Количество светодиодов в матрице 16x16 (16 * 16 = 256)
-#define BRIGHTNESS  64        // Начальная яркость (от 0 до 255)
-#define COLOR_ORDER GRB       // Порядок цветов (GRB для большинства матриц)
-#define LED_TYPE    WS2812B   // Тип светодиодов (например, WS2812B)
+#define LED_PIN     D2
+#define NUM_LEDS    256
+#define BRIGHTNESS  64
+#define COLOR_ORDER GRB
+#define LED_TYPE    WS2812B
 
-// Определяем массив для хранения информации о каждом светодиоде
 CRGB leds[NUM_LEDS];
 
 // --- Глобальные переменные для режимов ---
-uint8_t currentBrightness = BRIGHTNESS; // Текущая яркость
-uint8_t currentMode = 0;              // Текущий режим (индекс)
-uint8_t currentSpeed = 50;            // Текущая скорость (от 0 до 100, где 100 - самая быстрая)
+uint8_t currentBrightness = BRIGHTNESS;
+uint8_t currentMode = 0;
+uint8_t currentSpeed = 50; // Скорость от 0 (самая медленная) до 100 (самая быстрая)
+
+// --- Переменные для неблокирующей задержки ---
+unsigned long previousMillis = 0;
+// Частота обновления FastLED в миллисекундах.
+// 1000мс / 60 FPS = ~16мс
+const long frameDelayMillis = 1000 / 60; // Задержка между кадрами (16 мс для 60 FPS)
 
 // --- Объявления функций для режимов ---
 void modeSolidColor();
 void modeRainbowChase();
+// Добавляем новый режим для демонстрации легкости добавления
+void modeFire();
 
 // Массив указателей на функции режимов
-typedef void (*LampMode)(); // Определяем тип указателя на функцию без аргументов и возвращаемого значения
+typedef void (*LampMode)();
 LampMode lampModes[] = {
     modeSolidColor,
-    modeRainbowChase
+    modeRainbowChase,
+    modeFire // Добавляем новый режим
 };
-const uint8_t totalModes = sizeof(lampModes) / sizeof(lampModes[0]); // Количество доступных режимов
+const uint8_t totalModes = sizeof(lampModes) / sizeof(lampModes[0]);
 
 // --- Объект веб-сервера ---
-ESP8266WebServer server(80); // Создаем объект сервера на порту 80 (стандартный HTTP)
+ESP8266WebServer server(80);
 
-// --- Обработчики запросов веб-сервера ---
+// --- Обработчики запросов веб-сервера (пока остаются в C++) ---
+// Примечание: handleRoot будет изменена для отдачи файла из LittleFS
 
-// Обработка корневого запроса "/"
 void handleRoot() {
   Serial.println("Handling root request '/'");
-  // Здесь мы будем отдавать HTML-страницу
-  String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>GyverLamp Web</title>";
-  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-  html += "<style>";
-  html += "body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #222; color: #eee; }";
-  html += "h1 { color: #00bcd4; }";
-  html += "button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }";
-  html += "button:hover { background-color: #45a049; }";
-  html += ".slider-container { margin: 20px 0; }";
-  html += "input[type='range'] { width: 80%; max-width: 400px; height: 10px; background: #d3d3d3; outline: none; opacity: 0.7; transition: opacity .2s; border-radius: 5px; }";
-  html += "input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #00bcd4; cursor: pointer; }";
-  html += "input[type='range']::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #00bcd4; cursor: pointer; }";
-  html += "</style></head><body>";
-  html += "<h1>GyverLamp Web Control</h1>";
-  html += "<div>";
-  html += "<p>Brightness: <span id='brightnessValue'>" + String(currentBrightness) + "</span></p>";
-  html += "<div class='slider-container'><input type='range' id='brightnessSlider' min='0' max='255' value='" + String(currentBrightness) + "' onchange='setBrightness(this.value)'></div>";
-  html += "<p>Speed: <span id='speedValue'>" + String(currentSpeed) + "</span></p>";
-  html += "<div class='slider-container'><input type='range' id='speedSlider' min='0' max='100' value='" + String(currentSpeed) + "' onchange='setSpeed(this.value)'></div>";
-  html += "</div>";
-  html += "<div>";
-  html += "<p>Current Mode: <span id='modeValue'>" + String(currentMode) + "</span></p>";
-  html += "<button onclick='changeMode(0)'>Mode 0 (Solid Color)</button>";
-  html += "<button onclick='changeMode(1)'>Mode 1 (Rainbow Chase)</button>";
-  // Можно добавить больше кнопок для режимов, когда их будет больше
-  html += "</div>";
-  html += "<script>";
-  html += "function setBrightness(value) {";
-  html += "  document.getElementById('brightnessValue').innerText = value;";
-  html += "  fetch('/brightness?value=' + value);";
-  html += "}";
-  html += "function setSpeed(value) {";
-  html += "  document.getElementById('speedValue').innerText = value;";
-  html += "  fetch('/speed?value=' + value);";
-  html += "}";
-  html += "function changeMode(mode) {";
-  html += "  document.getElementById('modeValue').innerText = mode;";
-  html += "  fetch('/mode?value=' + mode);";
-  html += "}";
-  html += "</script>";
-  html += "</body></html>";
-  server.send(200, "text/html", html);
+  // Попытка отдать файл index.html из LittleFS
+  if (LittleFS.exists("/index.html")) {
+    File file = LittleFS.open("/index.html", "r");
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "index.html not found on LittleFS");
+  }
 }
 
-// Обработка запроса изменения яркости
 void handleBrightness() {
   if (server.hasArg("value")) {
-    currentBrightness = server.arg("value").toInt(); // Просто обновляем переменную
-    // FastLED.setBrightness(currentBrightness); // Эту строку УДАЛИМ
+    currentBrightness = server.arg("value").toInt();
     Serial.printf("Brightness set to: %d\n", currentBrightness);
     server.send(200, "text/plain", "OK");
   } else {
@@ -99,7 +67,6 @@ void handleBrightness() {
   }
 }
 
-// Обработка запроса изменения скорости
 void handleSpeed() {
   if (server.hasArg("value")) {
     currentSpeed = server.arg("value").toInt();
@@ -110,11 +77,10 @@ void handleSpeed() {
   }
 }
 
-// Обработка запроса изменения режима
 void handleMode() {
   if (server.hasArg("value")) {
     uint8_t newMode = server.arg("value").toInt();
-    if (newMode < totalModes) { // Проверяем, что режим существует
+    if (newMode < totalModes) {
       currentMode = newMode;
       Serial.printf("Mode set to: %d\n", currentMode);
       server.send(200, "text/plain", "OK");
@@ -126,8 +92,26 @@ void handleMode() {
   }
 }
 
-// Обработчик для несуществующих страниц
+// Обработчик для статических файлов (CSS, JS)
+void handleStaticFile() {
+  String path = server.uri();
+  if (LittleFS.exists(path)) {
+    String contentType = "text/plain"; // По умолчанию
+    if (path.endsWith(".html")) contentType = "text/html";
+    else if (path.endsWith(".css")) contentType = "text/css";
+    else if (path.endsWith(".js")) contentType = "application/javascript";
+    else if (path.endsWith(".ico")) contentType = "image/x-icon"; // Для favicon
+    else if (path.endsWith(".gz")) contentType = "application/x-gzip"; // Если будем использовать сжатие
+    File file = LittleFS.open(path, "r");
+    server.streamFile(file, contentType);
+    file.close();
+  } else {
+    server.send(404, "text/plain", "File Not Found");
+  }
+}
+
 void handleNotFound() {
+  Serial.printf("File not found: %s\n", server.uri().c_str());
   server.send(404, "text/plain", "Not Found");
 }
 
@@ -135,9 +119,29 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\nStarting GyverLampWeb...");
 
+  // Инициализация LittleFS
+  if (!LittleFS.begin()) {
+    Serial.println("An Error has occurred while mounting LittleFS");
+    return;
+  }
+  Serial.println("LittleFS mounted successfully");
+
+    // --- ДОБАВЬ ЭТОТ БЛОК ДЛЯ ОТЛАДКИ ---
+  Serial.println("Listing LittleFS files:");
+  Dir dir = LittleFS.openDir("/");
+  while (dir.next()) {
+    Serial.print("  File: ");
+    Serial.print(dir.fileName());
+    Serial.print(" Size: ");
+    Serial.println(dir.fileSize());
+  }
+  Serial.println("--- End of LittleFS file list ---");
+  // --- КОНЕЦ БЛОКА ОТЛАДКИ ---
+
   // Инициализация FastLED
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(currentBrightness);
+  fill_solid(leds, NUM_LEDS, CRGB::Black); // Погасим светодиоды при старте
   FastLED.show();
 
   // --- Подключение к Wi-Fi ---
@@ -155,24 +159,31 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   // --- Настройка веб-сервера ---
-  server.on("/", handleRoot); // Когда запрашивают корень "/", вызываем handleRoot
-  server.on("/brightness", handleBrightness); // Обработчик для /brightness
-  server.on("/speed", handleSpeed);         // Обработчик для /speed
-  server.on("/mode", handleMode);           // Обработчик для /mode
-  server.onNotFound(handleNotFound);        // Обработчик для несуществующих страниц
+  server.on("/", handleRoot);
+  server.on("/brightness", handleBrightness);
+  server.on("/speed", handleSpeed);
+  server.on("/mode", handleMode);
+  // Используем handleStaticFile для всех остальных запросов, которые могут быть файлами
+  server.onNotFound(handleStaticFile); // handleNotFound будет вызван, если handleStaticFile не найдет файл
 
-  server.begin(); // Запускаем веб-сервер
+  server.begin();
   Serial.println("HTTP server started");
 }
 
 void loop() {
-  // Устанавливаем яркость перед отрисовкой каждого кадра
-  FastLED.setBrightness(currentBrightness); // Эту строку ДОБАВИМ
+  unsigned long currentMillis = millis();
 
-  // Вызываем текущий режим
-  lampModes[currentMode]();
-  FastLED.show(); // Обновляем светодиоды после выполнения режима
-  FastLED.delay(1000 / 60); // Ограничиваем FPS для плавности и экономии ресурсов
+  // Если прошло достаточно времени с последнего обновления кадра
+  if (currentMillis - previousMillis >= frameDelayMillis) {
+    previousMillis = currentMillis; // Запоминаем текущее время
+
+    // Устанавливаем яркость перед отрисовкой каждого кадра
+    FastLED.setBrightness(currentBrightness);
+
+    // Вызываем текущий режим
+    lampModes[currentMode]();
+    FastLED.show();
+  }
 
   server.handleClient(); // Обязательно вызываем это для обработки входящих запросов
 }
@@ -181,16 +192,36 @@ void loop() {
 
 // Режим 0: Фиксированный цвет (красный для примера)
 void modeSolidColor() {
-  fill_solid(leds, NUM_LEDS, CRGB::Red); // Всегда красный
+  fill_solid(leds, NUM_LEDS, CRGB::Red);
 }
 
 // Режим 1: Бегущая радуга
 void modeRainbowChase() {
   // Скорость влияет на смещение цвета.
-  // Делим на 10.0, чтобы получить значение 0-10, которое затем умножается на millis()
-  // Чем выше currentSpeed, тем быстрее меняется радуга.
-  // (100 - currentSpeed) + 1: инвертируем скорость, чтобы 0 была самая быстрая, 100 самая медленная
-  // или просто currentSpeed / 10.0 для прямой зависимости
-  uint8_t hue = (millis() / ((100 - currentSpeed) + 1)); // Более низкое значение для (100-speed)+1 = более быстрые изменения
-  fill_rainbow(leds, NUM_LEDS, hue, 5); // 5 - шаг изменения оттенка между светодиодами
+  // currentSpeed от 0 (медленно) до 100 (быстро)
+  // map(currentSpeed, 0, 100, 10, 1) - инвертируем скорость для делителя
+  // Если currentSpeed=0, делитель = 10 (медленно). Если currentSpeed=100, делитель = 1 (быстро).
+  uint8_t speedDivisor = map(currentSpeed, 0, 100, 20, 1); // Меньшее число = быстрее
+  uint8_t hue = (millis() / speedDivisor);
+  fill_rainbow(leds, NUM_LEDS, hue, 5);
+}
+
+// Режим 2: Огонь (новый режим)
+void modeFire() {
+  // Простой эффект огня
+  static byte heat[NUM_LEDS];
+  for (int i = 0; i < NUM_LEDS; i++) {
+    heat[i] = qsub8(heat[i], random8(0, ((255 * 10) / NUM_LEDS) + 1));
+  }
+  for (int j = 0; j < NUM_LEDS; j++) {
+    heat[j] = qadd8(heat[j], random8(0, 5));
+  }
+  for (int k = NUM_LEDS - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+  }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = HeatColor(heat[i]);
+  }
+  // Скорость в режиме огня может влиять на "затухание" или "разгорание"
+  // Но для простоты пока не привязана к currentSpeed
 }
