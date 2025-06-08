@@ -74,21 +74,22 @@
     <h1>GyverLamp Web Control</h1>
 
     <div class="section">
-        <p>Brightness: <span id='brightnessValue'>64</span></p>
+        <p>Brightness: <span id='brightnessValue' data-initial-mode='0'>Loading...</span></p>
         <div class='slider-container'>
             <input type='range' id='brightnessSlider' min='0' max='255' value='64' oninput='updateBrightnessValue(this.value)' onchange='setBrightness(this.value)'>
         </div>
-        <p>Speed: <span id='speedValue'>50</span></p>
+        <p>Speed: <span id='speedValue' data-initial-mode='0'>Loading...</span></p>
         <div class='slider-container'>
             <input type='range' id='speedSlider' min='0' max='100' value='50' oninput='updateSpeedValue(this.value)' onchange='setSpeed(this.value)'>
         </div>
     </div>
 
     <div class="section">
-        <p>Current Mode: <span id='modeValue'>0</span></p>
+        <p>Current Mode: <span id='modeValue' data-initial-mode='0'>Loading...</span></p>
         <button onclick='changeMode(0)'>Mode 0 (Solid Color)</button>
         <button onclick='changeMode(1)'>Mode 1 (Rainbow Chase)</button>
-        <button onclick='changeMode(2)'>Mode 2 (Fire)</button> </div>
+        <button onclick='changeMode(2)'>Mode 2 (Fire)</button>
+    </div>
 
     <script>
         // Функция для отправки запросов на ESP
@@ -121,12 +122,50 @@
             sendRequest('/mode?value=' + mode);
         }
 
-        // Инициализация значений ползунков при загрузке страницы
-        // В идеале, эти значения должны запрашиваться с сервера при загрузке страницы
-        // Но для простоты пока оставим жестко заданными в HTML
+        // Функция для получения и обновления состояния
+        function fetchState() {
+            fetch('/state')
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to fetch state: ' + response.statusText);
+                        return {};
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        // Обновляем ползунок яркости и его значение
+                        const brightnessSlider = document.getElementById('brightnessSlider');
+                        const brightnessValue = document.getElementById('brightnessValue');
+                        if (brightnessSlider.value != data.brightness) { // Обновляем только если изменилось
+                             brightnessSlider.value = data.brightness;
+                             brightnessValue.innerText = data.brightness;
+                        }
+
+                        // Обновляем ползунок скорости и его значение
+                        const speedSlider = document.getElementById('speedSlider');
+                        const speedValue = document.getElementById('speedValue');
+                        if (speedSlider.value != data.speed) { // Обновляем только если изменилось
+                             speedSlider.value = data.speed;
+                             speedValue.innerText = data.speed;
+                        }
+
+                        // Обновляем значение режима
+                        const modeValue = document.getElementById('modeValue');
+                        if (modeValue.innerText != data.mode) { // Обновляем только если изменилось
+                            modeValue.innerText = data.mode;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching state:', error));
+        }
+
+        // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', () => {
-            updateBrightnessValue(document.getElementById('brightnessSlider').value);
-            updateSpeedValue(document.getElementById('speedSlider').value);
+            fetchState(); // Получаем начальное состояние при загрузке
+
+            // Настраиваем периодический опрос (например, каждые 1000 мс = 1 секунда)
+            setInterval(fetchState, 1000); // Опрашиваем состояние каждую секунду
         });
     </script>
 </body>

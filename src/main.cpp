@@ -3,6 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <LittleFS.h> // Для работы с файловой системой LittleFS
+#include <ArduinoJson.h>
 
 // --- Настройки светодиодов ---
 #define LED_PIN     D2
@@ -115,6 +116,20 @@ void handleNotFound() {
   server.send(404, "text/plain", "Not Found");
 }
 
+// Обработчик для запроса текущего состояния
+void handleGetState() {
+  Serial.println("Handling /state request");
+  DynamicJsonDocument doc(256); // Создаем JSON-документ (размер может быть больше, если будет больше параметров)
+  doc["brightness"] = currentBrightness;
+  doc["speed"] = currentSpeed;
+  doc["mode"] = currentMode;
+
+  String jsonString;
+  serializeJson(doc, jsonString); // Преобразуем JSON-документ в строку
+
+  server.send(200, "application/json", jsonString); // Отправляем JSON-ответ
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\nStarting GyverLampWeb...");
@@ -163,6 +178,7 @@ void setup() {
   server.on("/brightness", handleBrightness);
   server.on("/speed", handleSpeed);
   server.on("/mode", handleMode);
+  server.on("/state", handleGetState); // Новый эндпоинт для получения состояния
   // Используем handleStaticFile для всех остальных запросов, которые могут быть файлами
   server.onNotFound(handleStaticFile); // handleNotFound будет вызван, если handleStaticFile не найдет файл
 
